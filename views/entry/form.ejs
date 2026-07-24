@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AajKaam — Daily Entry</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header><h1>AAJKAAM</h1></header>
+  <div class="nav-links">
+    <a href="/entry">Daily Entry</a>
+    <a href="/setup">Setup</a>
+  </div>
+  <main>
+    <div class="card">
+      <h2>Today's Work</h2>
+      <% if (typeof saved !== 'undefined') { %>
+        <p style="color:#c9a44c">Saved successfully.</p>
+      <% } %>
+      <form method="POST" action="/entry">
+        <label>Date</label>
+        <input type="date" name="entry_date" value="<%= today %>" required>
+
+        <label>Project / Site</label>
+        <select name="project_id" required>
+          <% projects.forEach(p => { %>
+            <option value="<%= p.id %>"><%= p.name %></option>
+          <% }) %>
+        </select>
+
+        <label>Crew</label>
+        <select name="crew_id" id="crewSelect" required>
+          <option value="">-- Select Crew --</option>
+          <% crews.forEach(c => { %>
+            <option value="<%= c.id %>"><%= c.name %> (<%= c.activity_name %>)</option>
+          <% }) %>
+        </select>
+
+        <label>Entered By (Supervisor Name)</label>
+        <input type="text" name="entered_by" required>
+
+        <div id="stagesContainer" style="margin-top:20px;"></div>
+
+        <button type="submit">Save Today's Entry</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const crewSelect = document.getElementById('crewSelect');
+    const container = document.getElementById('stagesContainer');
+
+    crewSelect.addEventListener('change', async () => {
+      container.innerHTML = '';
+      const crewId = crewSelect.value;
+      if (!crewId) return;
+      const res = await fetch('/entry/stages/' + crewId);
+      const stages = await res.json();
+      stages.forEach(stage => {
+        const row = document.createElement('div');
+        row.className = 'stage-row';
+        row.innerHTML = `
+          <span>${stage.name} (${stage.weight_percent}%)</span>
+          <input type="hidden" name="stage_ids" value="${stage.id}">
+          <input type="number" step="0.01" name="units" placeholder="Units completed">
+          <input type="number" step="0.01" name="hours" placeholder="Hours">
+        `;
+        container.appendChild(row);
+      });
+    });
+  </script>
+</body>
+</html>

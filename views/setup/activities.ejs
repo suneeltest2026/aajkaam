@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head><title>AajKaam — Activities</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+  <header><h1>AAJKAAM</h1></header>
+  <div class="nav-links"><a href="/entry">Daily Entry</a><a href="/setup">Setup</a></div>
+  <main>
+    <div class="card">
+      <h2>New Activity</h2>
+      <form method="POST" action="/setup/activities">
+        <label>Activity Name</label>
+        <input type="text" name="name" placeholder="e.g. Ceiling Work" required>
+        <label>Unit</label>
+        <input type="text" name="unit" placeholder="sqm" value="sqm">
+        <button type="submit">Add Activity</button>
+      </form>
+    </div>
+
+    <% activities.forEach(a => { %>
+    <div class="card">
+      <h3><%= a.name %> (<%= a.unit %>)</h3>
+      <table>
+        <tr><th>Stage</th><th>Weight %</th><th>Order</th></tr>
+        <% stages.filter(s => s.activity_id === a.id).forEach(s => { %>
+          <tr><td><%= s.name %></td><td><%= s.weight_percent %>%</td><td><%= s.sequence_order %></td></tr>
+        <% }) %>
+      </table>
+      <form method="POST" action="/setup/activities/<%= a.id %>/stages" style="margin-top:16px;">
+        <label>Stage Name</label>
+        <input type="text" name="stage_name" placeholder="e.g. Framing" required>
+        <label>Weight (%)</label>
+        <input type="number" step="0.01" name="weight_percent" placeholder="40" required>
+        <label>Order</label>
+        <input type="number" name="sequence_order" placeholder="1" required>
+        <button type="submit">Add Stage</button>
+      </form>
+    </div>
+    <% }) %>
+  </main>
+</body>
+</html>
