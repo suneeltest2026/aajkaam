@@ -48,4 +48,60 @@ router.post('/', async (req, res) => {
   res.redirect('/entry?saved=1');
 });
 
+// Build the filtered daily-entries query shared by the report page and CSV export
+function buildReportQuery(query) {
+  const { from, to } = query;
+  const conditions = [];
+  const params = [];
+  if (from) { params.push(from); conditions.push(`de.entry_date >= $${params.length}`); }
+  if (to) { params.push(to); conditions.push(`de.entry_date <= $${params.length}`); }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const sql = `
+    SELECT de.entry_date, p.name AS project_name, c.name AS crew_name,
+           a.name AS activity_name, s.name AS stage_name,
+           de.units_completed, de.hours_worked, de.entered_by
+    FROM daily_entries de
+    LEFT JOIN projects p ON p.id = de.project_id
+    LEFT JOIN crews c ON c.id = de.crew_id
+    LEFT JOIN activity_stages s ON s.id = de.activity_stage_id
+    LEFT JOIN activities a ON a.id = s.activity_id
+    ${where}
+    ORDER BY de.entry_date DESC, de.id DESC
+  `;
+  return { sql, params };
+}
+
+// --- REPORT: view all recorded daily entries, with optional date-range filter ---
+router.get('/report', async (req, res) => {
+  const { from = '', to = '' } = req.query;
+  const { sql, params } = buildReportQuery(req.query);
+  const entries = await pool.query(sql, params);
+  res.render('entry/report', { entries: entries.rows, from, to });
+});
+
+// --- EXPORT: same data as CSV, which Excel opens directly ---
+router.get('/report/export.csv', async (req, res) => {
+  const { sql, params } = buildReportQuery(req.query);
+  const entries = await pool.query(sql, params);
+
+  const escapeCsv = (val) => {
+    if (val === null || val === undefined) return '';
+    const str = String(val);
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+  };
+
+  const header = ['Date', 'Project', 'Crew', 'Activity', 'Stage', 'Units Completed', 'Hours Worked', 'Entered By'];
+  const rows = entries.rows.map(e => [
+    e.entry_date.toISOString().slice(0, 10),
+    e.project_name, e.crew_name, e.activity_name, e.stage_name,
+    e.units_completed, e.hours_worked, e.entered_by
+  ].map(escapeCsv).join(','));
+
+  const csv = [header.join(','), ...rows].join('\r\n');
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="aajkaam-daily-entries.csv"');
+  res.send(String.fromCharCode(0xFEFF) + csv);
+});
+
 module.exports = router;
