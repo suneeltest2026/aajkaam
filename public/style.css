@@ -70,9 +70,9 @@ input, select {
 }
 input[type="date"] {
   box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
+  display: block;
+  width: 1px;
+  min-width: 100%;
 }
 input:focus, select:focus {
   outline: none;
