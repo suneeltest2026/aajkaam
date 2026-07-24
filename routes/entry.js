@@ -16,7 +16,9 @@ router.get('/', async (req, res) => {
 router.get('/stages/:crewId', async (req, res) => {
   const { crewId } = req.params;
   const crew = await pool.query(`
-    SELECT c.*, a.id AS activity_id FROM crews c WHERE c.id = $1
+    SELECT c.*, a.id AS activity_id FROM crews c
+    JOIN activities a ON a.id = c.activity_id
+    WHERE c.id = $1
   `, [crewId]);
   if (crew.rows.length === 0) return res.json([]);
   const stages = await pool.query(
