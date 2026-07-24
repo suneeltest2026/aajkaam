@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><title>AajKaam — Workers</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+  <header><h1>AAJKAAM</h1></header>
+  <div class="nav-links"><a href="/entry">Daily Entry</a><a href="/setup">Setup</a></div>
+  <main>
+    <div class="card">
+      <h2>New Worker</h2>
+      <form method="POST" action="/setup/workers">
+        <label>Worker Name</label>
+        <input type="text" name="name" required>
+        <label>Trade</label>
+        <select name="trade_id" required>
+          <% trades.forEach(t => { %><option value="<%= t.id %>"><%= t.name %></option><% }) %>
+        </select>
+        <label>Skill Level</label>
+        <select name="skill_level_id" required>
+          <% skillLevels.forEach(s => { %><option value="<%= s.id %>"><%= s.name %></option><% }) %>
+        </select>
+        <button type="submit">Add Worker</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Workers</h3>
+      <table>
+        <tr><th>Name</th><th>Trade</th><th>Skill Level</th></tr>
+        <% workers.forEach(w => { %>
+          <tr><td><%= w.name %></td><td><%= w.trade_name %></td><td><%= w.skill_level_name %></td></tr>
+        <% }) %>
+      </table>
+    </div>
+  </main>
+</body>
+</html>

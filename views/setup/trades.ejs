@@ -17,6 +17,19 @@
         <% trades.forEach(t => { %><tr><td><%= t.name %></td></tr><% }) %>
       </table>
     </div>
+
+    <div class="card">
+      <h2>Skill Levels</h2>
+      <form method="POST" action="/setup/skill-levels">
+        <label>New Skill Level Name</label>
+        <input type="text" name="name" placeholder="e.g. Skilled, Semi-Skilled, Helper" required>
+        <button type="submit">Add Skill Level</button>
+      </form>
+      <table>
+        <tr><th>Skill Level</th></tr>
+        <% skillLevels.forEach(s => { %><tr><td><%= s.name %></td></tr><% }) %>
+      </table>
+    </div>
   </main>
 </body>
 </html>

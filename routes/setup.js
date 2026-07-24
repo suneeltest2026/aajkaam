@@ -10,13 +10,70 @@ router.get('/', (req, res) => {
 // --- TRADES ---
 router.get('/trades', async (req, res) => {
   const result = await pool.query('SELECT * FROM trades ORDER BY name');
-  res.render('setup/trades', { trades: result.rows });
+  const skillLevels = await pool.query('SELECT * FROM skill_levels ORDER BY name');
+  res.render('setup/trades', { trades: result.rows, skillLevels: skillLevels.rows });
 });
 
 router.post('/trades', async (req, res) => {
   const { name } = req.body;
   await pool.query('INSERT INTO trades (name) VALUES ($1)', [name]);
   res.redirect('/setup/trades');
+});
+
+router.post('/skill-levels', async (req, res) => {
+  const { name } = req.body;
+  await pool.query('INSERT INTO skill_levels (name) VALUES ($1)', [name]);
+  res.redirect('/setup/trades');
+});
+
+// --- WORKERS ---
+router.get('/workers', async (req, res) => {
+  const workers = await pool.query(`
+    SELECT w.*, t.name AS trade_name, sl.name AS skill_level_name
+    FROM workers w
+    LEFT JOIN trades t ON t.id = w.trade_id
+    LEFT JOIN skill_levels sl ON sl.id = w.skill_level_id
+    WHERE w.is_active = TRUE ORDER BY w.name
+  `);
+  const trades = await pool.query('SELECT * FROM trades ORDER BY name');
+  const skillLevels = await pool.query('SELECT * FROM skill_levels ORDER BY name');
+  res.render('setup/workers', { workers: workers.rows, trades: trades.rows, skillLevels: skillLevels.rows });
+});
+
+router.post('/workers', async (req, res) => {
+  const { name, trade_id, skill_level_id } = req.body;
+  await pool.query(
+    'INSERT INTO workers (name, trade_id, skill_level_id) VALUES ($1,$2,$3)',
+    [name, trade_id || null, skill_level_id || null]
+  );
+  res.redirect('/setup/workers');
+});
+
+// --- PROJECT TYPES ---
+router.post('/project-types', async (req, res) => {
+  const { name } = req.body;
+  await pool.query('INSERT INTO project_types (name) VALUES ($1)', [name]);
+  res.redirect('/setup/projects');
+});
+
+// --- PROJECTS ---
+router.get('/projects', async (req, res) => {
+  const projects = await pool.query(`
+    SELECT p.*, pt.name AS project_type_name
+    FROM projects p LEFT JOIN project_types pt ON pt.id = p.project_type_id
+    WHERE p.is_active = TRUE ORDER BY p.name
+  `);
+  const projectTypes = await pool.query('SELECT * FROM project_types ORDER BY name');
+  res.render('setup/projects', { projects: projects.rows, projectTypes: projectTypes.rows });
+});
+
+router.post('/projects', async (req, res) => {
+  const { name, project_type_id } = req.body;
+  await pool.query(
+    'INSERT INTO projects (name, project_type_id) VALUES ($1,$2)',
+    [name, project_type_id || null]
+  );
+  res.redirect('/setup/projects');
 });
 
 // --- ACTIVITIES + STAGES ---
