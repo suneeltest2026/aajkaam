@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html>
-<head><title>AajKaam — Targets</title><link rel="stylesheet" href="/style.css"></head>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Targets</title><link rel="stylesheet" href="/style.css"></head>
 <body>
   <header><h1>AAJKAAM</h1></header>
   <div class="nav-links"><a href="/entry">Daily Entry</a><a href="/setup">Setup</a></div>
   <main>
     <div class="card">
       <h2>New Target</h2>
-      <p style="color:#9aa0ab;font-size:13px;">Leave "Project Type" blank to make this the general/default target for that stage.</p>
+      <p style="color:var(--text-dim);font-size:13px;">Leave "Project Type" blank to make this the general/default target for that stage.</p>
       <form method="POST" action="/setup/targets">
         <label>Stage</label>
         <select name="stage_id" id="stageSelect" required>
@@ -32,6 +35,7 @@
 
     <div class="card">
       <h3>Existing Targets</h3>
+      <div class="table-wrap">
       <table>
         <tr><th>Activity</th><th>Stage</th><th>Project Type</th><th>Target/Day</th></tr>
         <% targets.forEach(t => { %>
@@ -43,6 +47,7 @@
           </tr>
         <% }) %>
       </table>
+      </div>
     </div>
   </main>
   <script>

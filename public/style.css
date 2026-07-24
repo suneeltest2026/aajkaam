@@ -1,22 +1,28 @@
-/* AajKaam - shared premium look: dark charcoal + gold accent */
+/* AajKaam - light, high-contrast, mobile-first field UI */
 :root {
-  --bg: #14161a;
-  --panel: #1c1f26;
-  --border: #2a2e37;
-  --gold: #c9a44c;
-  --text: #eceef1;
-  --text-dim: #9aa0ab;
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --border: #d7dbe1;
+  --gold: #9a6b00;
+  --gold-bg: #f0b400;
+  --text: #16181c;
+  --text-dim: #5b6270;
+  --danger: #b3261e;
 }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Segoe UI', system-ui, sans-serif;
   margin: 0;
   padding: 0;
+  font-size: 16px;
+  line-height: 1.4;
 }
 header {
-  padding: 24px 32px;
+  padding: 18px 20px;
+  background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
 header h1 {
@@ -28,51 +34,90 @@ header h1 {
 }
 main {
   max-width: 720px;
-  margin: 40px auto;
-  padding: 0 20px;
+  margin: 0 auto;
+  padding: 16px;
 }
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 28px;
-  margin-bottom: 24px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(20, 22, 26, 0.06);
 }
+.card h2 { margin-top: 0; font-size: 19px; }
+.card h3 { font-size: 16px; }
 label {
   display: block;
-  margin: 16px 0 6px;
+  margin: 18px 0 6px;
   color: var(--text-dim);
   font-size: 13px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+label:first-of-type { margin-top: 0; }
 input, select {
   width: 100%;
-  padding: 10px 12px;
-  background: #10121600;
-  background-color: #10121680;
-  border: 1px solid var(--border);
+  min-height: 48px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-size: 15px;
+  font-size: 16px;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(154, 107, 0, 0.15);
 }
 button {
+  width: 100%;
   margin-top: 22px;
+  min-height: 50px;
   padding: 12px 24px;
-  background: var(--gold);
-  color: #1a1a1a;
+  background: var(--gold-bg);
+  color: #1a1400;
   border: none;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 16px;
   cursor: pointer;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
-button:hover { opacity: 0.9; }
-a { color: var(--gold); text-decoration: none; }
-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
-th { color: var(--text-dim); text-transform: uppercase; font-size: 12px; }
-.nav-links { display: flex; gap: 20px; padding: 16px 32px; border-bottom: 1px solid var(--border); }
-.stage-row { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-.stage-row span { flex: 1; color: var(--text-dim); }
-.stage-row input { flex: 1; }
+button:hover { filter: brightness(0.95); }
+button:active { filter: brightness(0.9); }
+a { color: var(--gold); text-decoration: none; font-weight: 600; }
+
+.table-wrap { overflow-x: auto; margin-top: 12px; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; min-width: 320px; }
+th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); font-size: 14px; white-space: nowrap; }
+th { color: var(--text-dim); text-transform: uppercase; font-size: 11px; letter-spacing: 0.4px; }
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+}
+.nav-links a {
+  padding: 14px 12px;
+  color: var(--text-dim);
+  font-size: 15px;
+  border-bottom: 3px solid transparent;
+}
+.nav-links a:hover { color: var(--text); }
+
+.stage-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.stage-row span { flex: 1 1 100%; color: var(--text-dim); font-size: 13px; }
+.stage-row input { flex: 1 1 45%; }
+
+@media (max-width: 480px) {
+  header { padding: 14px 16px; }
+  header h1 { font-size: 19px; }
+  main { padding: 12px; }
+  .card { padding: 16px; border-radius: 10px; }
+  .nav-links a { padding: 12px 10px; font-size: 14px; }
+}

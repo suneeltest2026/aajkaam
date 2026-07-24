@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AajKaam — Daily Entry</title>
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -14,7 +16,7 @@
     <div class="card">
       <h2>Today's Work</h2>
       <% if (typeof saved !== 'undefined') { %>
-        <p style="color:#c9a44c">Saved successfully.</p>
+        <p style="color:var(--gold)">Saved successfully.</p>
       <% } %>
       <form method="POST" action="/entry">
         <label>Date</label>
