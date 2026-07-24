@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
     JOIN activities a ON a.id = c.activity_id ORDER BY c.name
   `);
   const projects = await pool.query('SELECT * FROM projects WHERE is_active = TRUE ORDER BY name');
-  res.render('entry/form', { crews: crews.rows, projects: projects.rows, today: new Date().toISOString().slice(0,10) });
+  res.render('entry/form', { crews: crews.rows, projects: projects.rows, today: new Date().toISOString().slice(0,10), saved: req.query.saved });
 });
 
 // When a crew + activity is picked, show its stages so supervisor can enter units per stage
