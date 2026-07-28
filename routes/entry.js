@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const { requireRole } = require('../middleware/auth');
+
+router.use(requireRole('supervisor', 'management'));
 
 // Show the daily entry form
 router.get('/', async (req, res) => {
@@ -9,7 +12,13 @@ router.get('/', async (req, res) => {
     JOIN activities a ON a.id = c.activity_id ORDER BY c.name
   `);
   const projects = await pool.query('SELECT * FROM projects WHERE is_active = TRUE ORDER BY name');
-  res.render('entry/form', { crews: crews.rows, projects: projects.rows, today: new Date().toISOString().slice(0,10), saved: req.query.saved });
+  res.render('entry/form', {
+    crews: crews.rows,
+    projects: projects.rows,
+    today: new Date().toISOString().slice(0, 10),
+    saved: req.query.saved,
+    enteredByName: req.user.name,
+  });
 });
 
 // When a crew + activity is picked, show its stages so supervisor can enter units per stage
@@ -30,31 +39,35 @@ router.get('/stages/:crewId', async (req, res) => {
 
 // Save a day's entries (one row per stage worked on)
 router.post('/', async (req, res) => {
-  const { entry_date, project_id, crew_id, entered_by, stage_ids, units, hours } = req.body;
+  const { entry_date, project_id, crew_id, stage_ids, units, hours } = req.body;
 
   // stage_ids/units/hours arrive as arrays (one item per stage row on the form)
   const stageIdList = Array.isArray(stage_ids) ? stage_ids : [stage_ids];
   const unitsList = Array.isArray(units) ? units : [units];
   const hoursList = Array.isArray(hours) ? hours : [hours];
 
+  // entered_by always comes from the logged-in session, never the form —
+  // that's what makes "supervisor sees only their own entries" trustworthy.
   for (let i = 0; i < stageIdList.length; i++) {
     if (!unitsList[i]) continue; // skip stages left blank that day
     await pool.query(
-      `INSERT INTO daily_entries (entry_date, project_id, crew_id, activity_stage_id, units_completed, hours_worked, entered_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [entry_date, project_id, crew_id, stageIdList[i], unitsList[i], hoursList[i] || null, entered_by]
+      `INSERT INTO daily_entries (entry_date, project_id, crew_id, activity_stage_id, units_completed, hours_worked, entered_by, entered_by_user_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [entry_date, project_id, crew_id, stageIdList[i], unitsList[i], hoursList[i] || null, req.user.name, req.user.id]
     );
   }
   res.redirect('/entry?saved=1');
 });
 
-// Build the filtered daily-entries query shared by the report page and CSV export
-function buildReportQuery(query) {
+// Build the filtered daily-entries query shared by the report page and CSV export.
+// A supervisor only ever sees entries they themselves made; management sees all.
+function buildReportQuery(query, user) {
   const { from, to } = query;
   const conditions = [];
   const params = [];
   if (from) { params.push(from); conditions.push(`de.entry_date >= $${params.length}`); }
   if (to) { params.push(to); conditions.push(`de.entry_date <= $${params.length}`); }
+  if (user.role === 'supervisor') { params.push(user.id); conditions.push(`de.entered_by_user_id = $${params.length}`); }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const sql = `
     SELECT de.entry_date, p.name AS project_name, c.name AS crew_name,
@@ -74,14 +87,14 @@ function buildReportQuery(query) {
 // --- REPORT: view all recorded daily entries, with optional date-range filter ---
 router.get('/report', async (req, res) => {
   const { from = '', to = '' } = req.query;
-  const { sql, params } = buildReportQuery(req.query);
+  const { sql, params } = buildReportQuery(req.query, req.user);
   const entries = await pool.query(sql, params);
   res.render('entry/report', { entries: entries.rows, from, to });
 });
 
 // --- EXPORT: same data as CSV, which Excel opens directly ---
 router.get('/report/export.csv', async (req, res) => {
-  const { sql, params } = buildReportQuery(req.query);
+  const { sql, params } = buildReportQuery(req.query, req.user);
   const entries = await pool.query(sql, params);
 
   const escapeCsv = (val) => {

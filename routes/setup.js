@@ -1,10 +1,73 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const { hashPin } = require('../db/pin');
+
+// Setup is Management-only, with one bootstrap exception: when the system
+// has no logins at all yet, /setup/users stays open just long enough to
+// create the first Management account.
+router.use(async (req, res, next) => {
+  if (req.user && req.user.role === 'management') return next();
+  if (req.path === '/users' || req.path.startsWith('/users')) {
+    const count = await pool.query('SELECT COUNT(*)::int AS n FROM users');
+    if (count.rows[0].n === 0) return next();
+  }
+  return res.redirect('/login');
+});
 
 // SETUP HOME - shows links to each setup area
 router.get('/', (req, res) => {
   res.render('setup/index');
+});
+
+// --- USERS (login accounts) ---
+router.get('/users', async (req, res) => {
+  const users = await pool.query('SELECT id, name, role, worker_id, is_active FROM users ORDER BY role, name');
+  const availableWorkers = await pool.query(`
+    SELECT w.id, w.name FROM workers w
+    LEFT JOIN users u ON u.worker_id = w.id
+    WHERE u.id IS NULL AND w.is_active = TRUE
+    ORDER BY w.name
+  `);
+  res.render('setup/users', { users: users.rows, availableWorkers: availableWorkers.rows, error: req.query.error });
+});
+
+router.post('/users/management', async (req, res) => {
+  const { name, pin, confirm_pin } = req.body;
+  if (pin !== confirm_pin) return res.redirect('/setup/users?error=mismatch');
+  await pool.query('INSERT INTO users (name, role, pin_hash) VALUES ($1,$2,$3)', [name, 'management', hashPin(pin)]);
+  res.redirect('/setup/users');
+});
+
+router.post('/users/supervisor', async (req, res) => {
+  const { name, pin, confirm_pin } = req.body;
+  if (pin !== confirm_pin) return res.redirect('/setup/users?error=mismatch');
+  await pool.query('INSERT INTO users (name, role, pin_hash) VALUES ($1,$2,$3)', [name, 'supervisor', hashPin(pin)]);
+  res.redirect('/setup/users');
+});
+
+router.post('/users/worker', async (req, res) => {
+  const { worker_id, pin, confirm_pin } = req.body;
+  if (pin !== confirm_pin) return res.redirect('/setup/users?error=mismatch');
+  const worker = await pool.query('SELECT name FROM workers WHERE id = $1', [worker_id]);
+  if (!worker.rows.length) return res.redirect('/setup/users');
+  await pool.query(
+    'INSERT INTO users (name, role, worker_id, pin_hash) VALUES ($1,$2,$3,$4)',
+    [worker.rows[0].name, 'worker', worker_id, hashPin(pin)]
+  );
+  res.redirect('/setup/users');
+});
+
+router.post('/users/:id/reset-pin', async (req, res) => {
+  const { pin, confirm_pin } = req.body;
+  if (pin !== confirm_pin) return res.redirect('/setup/users?error=mismatch');
+  await pool.query('UPDATE users SET pin_hash = $1 WHERE id = $2', [hashPin(pin), req.params.id]);
+  res.redirect('/setup/users');
+});
+
+router.post('/users/:id/toggle-active', async (req, res) => {
+  await pool.query('UPDATE users SET is_active = NOT is_active WHERE id = $1', [req.params.id]);
+  res.redirect('/setup/users');
 });
 
 // --- TRADES ---

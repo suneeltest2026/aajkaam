@@ -2,26 +2,20 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 const { getTargetForStage } = require('../db/targets');
+const { requireRole } = require('../middleware/auth');
 
-// Phase 1 has no login yet, so a worker picks their name — same pattern
-// the supervisor form uses for "Entered By".
+router.use(requireRole('worker'));
+
+// No :id here on purpose — a worker only ever sees their own dashboard,
+// taken from the logged-in session, never from the URL.
 router.get('/', async (req, res) => {
-  const workers = await pool.query(`
-    SELECT w.*, t.name AS trade_name
-    FROM workers w LEFT JOIN trades t ON t.id = w.trade_id
-    WHERE w.is_active = TRUE ORDER BY w.name
-  `);
-  res.render('worker/index', { workers: workers.rows });
-});
-
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
+  const id = req.user.worker_id;
   const workerRes = await pool.query(`
     SELECT w.*, t.name AS trade_name
     FROM workers w LEFT JOIN trades t ON t.id = w.trade_id
     WHERE w.id = $1
   `, [id]);
-  if (workerRes.rows.length === 0) return res.redirect('/worker');
+  if (workerRes.rows.length === 0) return res.redirect('/login');
   const worker = workerRes.rows[0];
 
   const crewRows = await pool.query(`

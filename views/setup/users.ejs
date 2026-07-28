@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Users</title><link rel="stylesheet" href="/style.css"></head>
+<body class="role-supervisor">
+  <%- include('../partials/nav', {current: 'setup'}) %>
+  <main>
+    <% if (error === 'mismatch') { %><p class="auth-error">PIN and confirmation didn't match — try again.</p><% } %>
+
+    <div class="card">
+      <h2>Logins</h2>
+      <p style="color:var(--steel);">Each person gets their own name and PIN. A worker's login is separate from their profile in Setup &rarr; Workers — add the profile first, then a login here if they need app access.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th><th>Role</th><th>Status</th><th></th></tr>
+          <% users.forEach(u => { %>
+            <tr>
+              <td><%= u.name %></td>
+              <td style="text-transform:capitalize;"><%= u.role %></td>
+              <td><%= u.is_active ? 'Active' : 'Deactivated' %></td>
+              <td>
+                <div style="display:flex;gap:8px;">
+                  <form method="POST" action="/setup/users/<%= u.id %>/reset-pin" style="display:flex;gap:6px;align-items:center;margin:0;">
+                    <input type="password" name="pin" placeholder="New PIN" inputmode="numeric" minlength="4" maxlength="6" required style="min-height:36px;width:110px;">
+                    <input type="password" name="confirm_pin" placeholder="Confirm" inputmode="numeric" minlength="4" maxlength="6" required style="min-height:36px;width:110px;">
+                    <button type="submit" style="width:auto;min-height:36px;margin:0;padding:0 12px;font-size:12.5px;">Reset PIN</button>
+                  </form>
+                  <form method="POST" action="/setup/users/<%= u.id %>/toggle-active" style="margin:0;">
+                    <button type="submit" style="width:auto;min-height:36px;margin:0;padding:0 12px;font-size:12.5px;background:var(--app-bg);color:var(--ink);"><%= u.is_active ? 'Deactivate' : 'Reactivate' %></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+          <% if (!users.length) { %><tr><td colspan="4" style="color:var(--steel);">No logins yet.</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Add Management login</h3>
+      <form method="POST" action="/setup/users/management">
+        <label>Name</label>
+        <input type="text" name="name" required>
+        <label>PIN</label>
+        <input type="password" name="pin" inputmode="numeric" minlength="4" maxlength="6" required>
+        <label>Confirm PIN</label>
+        <input type="password" name="confirm_pin" inputmode="numeric" minlength="4" maxlength="6" required>
+        <button type="submit">Add Management Login</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Add Supervisor login</h3>
+      <form method="POST" action="/setup/users/supervisor">
+        <label>Name</label>
+        <input type="text" name="name" required>
+        <label>PIN</label>
+        <input type="password" name="pin" inputmode="numeric" minlength="4" maxlength="6" required>
+        <label>Confirm PIN</label>
+        <input type="password" name="confirm_pin" inputmode="numeric" minlength="4" maxlength="6" required>
+        <button type="submit">Add Supervisor Login</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Add Worker login</h3>
+      <% if (!availableWorkers.length) { %>
+        <p style="color:var(--steel);">Every active worker already has a login, or none exist yet — add worker profiles in <a href="/setup/workers">Setup &rarr; Workers</a> first.</p>
+      <% } else { %>
+        <form method="POST" action="/setup/users/worker">
+          <label>Worker</label>
+          <select name="worker_id" required>
+            <% availableWorkers.forEach(w => { %><option value="<%= w.id %>"><%= w.name %></option><% }) %>
+          </select>
+          <label>PIN</label>
+          <input type="password" name="pin" inputmode="numeric" minlength="4" maxlength="6" required>
+          <label>Confirm PIN</label>
+          <input type="password" name="confirm_pin" inputmode="numeric" minlength="4" maxlength="6" required>
+          <button type="submit">Add Worker Login</button>
+        </form>
+      <% } %>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Log in</title><link rel="stylesheet" href="/style.css"></head>
+<body class="role-<%= role %>">
+  <%- include('../partials/icons') %>
+  <header class="site-header"><span class="wordmark"><svg class="ic" width="18" height="18"><use href="#i-hardhat"></use></svg>AAJKAAM</span></header>
+  <main>
+    <div class="card">
+      <h2>Which <%= role %> are you?</h2>
+      <% if (error) { %><p class="auth-error">That PIN didn't match — try again.</p><% } %>
+      <% if (!accounts.length) { %>
+        <p style="color:var(--steel);">No <%= role %> logins have been set up yet. Ask Management to add one in Setup &rarr; Users.</p>
+      <% } %>
+      <% accounts.forEach(a => { %>
+        <a href="/login/pin?role=<%= role %>&user=<%= a.id %>" class="account-row">
+          <%= a.name %>
+          <svg class="ic" width="18" height="18" style="transform:rotate(-90deg);color:var(--steel);"><use href="#i-chevron"></use></svg>
+        </a>
+      <% }) %>
+      <p style="margin-top:20px;"><a href="/login">&larr; Not you? Pick a different role</a></p>
+    </div>
+  </main>
+</body>
+</html>

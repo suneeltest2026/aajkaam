@@ -80,7 +80,20 @@ CREATE TABLE targets (
     is_general_default BOOLEAN DEFAULT FALSE
 );
 
--- 11. DAILY ENTRIES: what the supervisor records each day
+-- 11. USERS: login accounts. A worker's login links to their `workers` row
+--     (worker_id); supervisor and management accounts are login-only, no
+--     separate profile table. PIN is stored hashed, never in plain text.
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('worker','supervisor','management')),
+    worker_id INTEGER REFERENCES workers(id), -- set only when role = 'worker'
+    pin_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 12. DAILY ENTRIES: what the supervisor records each day
 CREATE TABLE daily_entries (
     id SERIAL PRIMARY KEY,
     entry_date DATE NOT NULL,
@@ -89,11 +102,12 @@ CREATE TABLE daily_entries (
     activity_stage_id INTEGER REFERENCES activity_stages(id),
     units_completed NUMERIC(10,2) NOT NULL,
     hours_worked NUMERIC(5,2),
-    entered_by VARCHAR(150),             -- supervisor name/login (Phase 1: simple text)
+    entered_by VARCHAR(150),             -- supervisor's display name, cached for reports
+    entered_by_user_id INTEGER REFERENCES users(id), -- the real login that made this entry
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 12. RECOGNITION: HR flags/acknowledgements for workers (no pay processing)
+-- 13. RECOGNITION: HR flags/acknowledgements for workers (no pay processing)
 CREATE TABLE recognitions (
     id SERIAL PRIMARY KEY,
     worker_id INTEGER REFERENCES workers(id),
