@@ -1,0 +1,11 @@
+<%- include('./icons') %>
+<header class="site-header">
+  <span class="wordmark"><svg class="ic" width="18" height="18"><use href="#i-hardhat"></use></svg>AAJKAAM</span>
+</header>
+<div class="nav-links">
+  <a href="/worker" class="role-worker <%= typeof current !== 'undefined' && current === 'worker' ? 'is-active' : '' %>">Worker</a>
+  <a href="/entry" class="role-supervisor <%= typeof current !== 'undefined' && current === 'entry' ? 'is-active' : '' %>">Daily Entry</a>
+  <a href="/entry/report" class="role-supervisor <%= typeof current !== 'undefined' && current === 'report' ? 'is-active' : '' %>">Report</a>
+  <a href="/setup" class="role-supervisor <%= typeof current !== 'undefined' && current === 'setup' ? 'is-active' : '' %>">Setup</a>
+  <a href="/management" class="role-management <%= typeof current !== 'undefined' && current === 'management' ? 'is-active' : '' %>">Management</a>
+</div>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Worker</title><link rel="stylesheet" href="/style.css"></head>
+<body class="role-worker">
+  <%- include('../partials/nav', {current: 'worker'}) %>
+  <main>
+    <div class="card">
+      <h2>Who's this?</h2>
+      <p style="color:var(--steel)">Pick your name to see today's work, progress, and incentive share.</p>
+      <% if (!workers.length) { %>
+        <p style="color:var(--steel)">No workers yet — add some in <a href="/setup/workers">Setup &rarr; Workers</a>.</p>
+      <% } %>
+      <% workers.forEach(w => { %>
+        <a href="/worker/<%= w.id %>" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 4px;border-bottom:1px solid var(--line);color:var(--ink);">
+          <span>
+            <span style="display:block;font-weight:700;font-size:15.5px;"><%= w.name %></span>
+            <span style="display:block;font-weight:400;font-size:12.5px;color:var(--steel);margin-top:2px;"><%= w.trade_name || 'No trade set' %></span>
+          </span>
+          <svg class="ic" width="18" height="18" style="transform:rotate(-90deg);color:var(--steel);"><use href="#i-chevron"></use></svg>
+        </a>
+      <% }) %>
+    </div>
+  </main>
+</body>
+</html>

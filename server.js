@@ -14,5 +14,7 @@ app.get('/', (req, res) => res.redirect('/entry'));
 
 app.use('/setup', require('./routes/setup'));
 app.use('/entry', require('./routes/entry'));
+app.use('/worker', require('./routes/worker'));
+app.use('/management', require('./routes/management'));
 
 app.listen(PORT, () => console.log(`AajKaam running on port ${PORT}`));
