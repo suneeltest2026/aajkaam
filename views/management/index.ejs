@@ -56,6 +56,45 @@
     </div>
 
     <div class="card">
+      <h2 style="margin-bottom:4px;">Projects &amp; team assignment</h2>
+      <p style="color:var(--steel);font-size:13px;margin:0 0 16px;">Who can see and log data for what &mdash; assigned in Setup &rarr; Crews.</p>
+      <% projectTeams.forEach((p, i) => { %>
+        <div style="padding:16px 0; <%= i > 0 ? 'border-top:1px solid var(--line);' : '' %>">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <p style="font-size:16px;font-weight:700;margin:0;"><%= p.name %></p>
+            <div style="display:flex;gap:8px;">
+              <span class="pill pill--neutral"><svg class="ic-sm" width="12" height="12"><use href="#i-crew"></use></svg><%= p.supervisorCount %> supervisor<%= p.supervisorCount === 1 ? '' : 's' %></span>
+              <span class="pill pill--neutral"><svg class="ic-sm" width="12" height="12"><use href="#i-user"></use></svg><%= p.workerCount %> worker<%= p.workerCount === 1 ? '' : 's' %></span>
+            </div>
+          </div>
+
+          <% if (!p.supervisors.length && !p.unassignedCrews.length) { %>
+            <p style="color:var(--steel);font-size:13px;margin:0;">No crews assigned to this project yet.</p>
+          <% } %>
+
+          <% p.supervisors.forEach(s => { %>
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0;flex-wrap:wrap;">
+              <span class="pill" style="background:var(--supervisor);color:var(--supervisor-ink);flex:none;"><%= s.name %></span>
+              <span style="color:var(--steel);font-size:13px;flex:1;min-width:200px;">
+                <% if (s.workers.length) { %><%= s.workers.join(', ') %><% } else { %>No workers on their crew(s) yet<% } %>
+              </span>
+            </div>
+          <% }) %>
+
+          <% if (p.unassignedCrews.length) { %>
+            <p style="color:var(--warn-text);background:var(--warn-bg);border-radius:8px;padding:8px 10px;font-size:12.5px;margin:8px 0 0;">
+              <svg class="ic-sm" width="12" height="12"><use href="#i-alert"></use></svg>
+              No supervisor assigned yet for: <%= p.unassignedCrews.join(', ') %> — nobody can log entries for <%= p.unassignedCrews.length === 1 ? 'it' : 'them' %>.
+            </p>
+          <% } %>
+        </div>
+      <% }) %>
+      <% if (!projectTeams.length) { %>
+        <p style="color:var(--steel);">No active projects yet — add one in <a href="/setup/projects">Setup &rarr; Projects</a>.</p>
+      <% } %>
+    </div>
+
+    <div class="card">
       <h2 style="margin-bottom:14px;">Crew performance &mdash; today</h2>
       <div class="table-wrap">
         <table>

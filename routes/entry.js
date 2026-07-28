@@ -19,14 +19,16 @@ router.get('/', async (req, res) => {
   const allowed = await allowedCrewIds(req.user);
   const crews = await pool.query(
     allowed
-      ? `SELECT c.*, a.name AS activity_name FROM crews c JOIN activities a ON a.id = c.activity_id WHERE c.id = ANY($1) ORDER BY c.name`
-      : `SELECT c.*, a.name AS activity_name FROM crews c JOIN activities a ON a.id = c.activity_id ORDER BY c.name`,
+      ? `SELECT c.*, a.name AS activity_name, p.name AS project_name FROM crews c
+         JOIN activities a ON a.id = c.activity_id LEFT JOIN projects p ON p.id = c.project_id
+         WHERE c.id = ANY($1) ORDER BY c.name`
+      : `SELECT c.*, a.name AS activity_name, p.name AS project_name FROM crews c
+         JOIN activities a ON a.id = c.activity_id LEFT JOIN projects p ON p.id = c.project_id
+         ORDER BY c.name`,
     allowed ? [allowed] : []
   );
-  const projects = await pool.query('SELECT * FROM projects WHERE is_active = TRUE ORDER BY name');
   res.render('entry/form', {
     crews: crews.rows,
-    projects: projects.rows,
     today: new Date().toISOString().slice(0, 10),
     saved: req.query.saved,
     error: req.query.error,
@@ -34,28 +36,31 @@ router.get('/', async (req, res) => {
   });
 });
 
-// When a crew + activity is picked, show its stages so supervisor can enter units per stage
+// When a crew is picked, show its project + stages so the supervisor can
+// enter units per stage. The crew's project is fixed — there's no separate
+// project picker on this form.
 router.get('/stages/:crewId', async (req, res) => {
   const { crewId } = req.params;
   const allowed = await allowedCrewIds(req.user);
-  if (allowed && !allowed.includes(Number(crewId))) return res.json([]);
+  if (allowed && !allowed.includes(Number(crewId))) return res.json({ project: null, stages: [] });
 
   const crew = await pool.query(`
-    SELECT c.*, a.id AS activity_id FROM crews c
+    SELECT c.*, a.id AS activity_id, p.name AS project_name FROM crews c
     JOIN activities a ON a.id = c.activity_id
+    LEFT JOIN projects p ON p.id = c.project_id
     WHERE c.id = $1
   `, [crewId]);
-  if (crew.rows.length === 0) return res.json([]);
+  if (crew.rows.length === 0) return res.json({ project: null, stages: [] });
   const stages = await pool.query(
     'SELECT * FROM activity_stages WHERE activity_id = $1 ORDER BY sequence_order',
     [crew.rows[0].activity_id]
   );
-  res.json(stages.rows);
+  res.json({ project: { name: crew.rows[0].project_name || 'No project set' }, stages: stages.rows });
 });
 
 // Save a day's entries (one row per stage worked on)
 router.post('/', async (req, res) => {
-  const { entry_date, project_id, crew_id, stage_ids, units, hours } = req.body;
+  const { entry_date, crew_id, stage_ids, units, hours } = req.body;
 
   // The crew dropdown is already filtered client-side, but a supervisor
   // could still POST an arbitrary crew_id directly — check for real here.
@@ -63,6 +68,12 @@ router.post('/', async (req, res) => {
   if (allowed && !allowed.includes(Number(crew_id))) {
     return res.redirect('/entry?error=crew');
   }
+
+  // The project is never taken from the form — it's whatever project the
+  // crew is currently assigned to, looked up fresh here.
+  const crewRow = await pool.query('SELECT project_id FROM crews WHERE id = $1', [crew_id]);
+  if (!crewRow.rows.length) return res.redirect('/entry?error=crew');
+  const project_id = crewRow.rows[0].project_id;
 
   // stage_ids/units/hours arrive as arrays (one item per stage row on the form)
   const stageIdList = Array.isArray(stage_ids) ? stage_ids : [stage_ids];

@@ -11,8 +11,7 @@ router.use(requireRole('management'));
 // the crew's real completion %.
 async function crewDayAggregate(crewId, dateStr) {
   const rows = await pool.query(`
-    SELECT s.id AS stage_id, SUM(de.units_completed) AS units, p.project_type_id,
-           MIN(p.name) AS project_name
+    SELECT s.id AS stage_id, SUM(de.units_completed) AS units, p.project_type_id
     FROM daily_entries de
     JOIN activity_stages s ON s.id = de.activity_stage_id
     LEFT JOIN projects p ON p.id = de.project_id
@@ -20,13 +19,67 @@ async function crewDayAggregate(crewId, dateStr) {
     GROUP BY s.id, p.project_type_id
   `, [crewId, dateStr]);
 
-  let sumUnits = 0, sumTarget = 0, projectName = null;
+  let sumUnits = 0, sumTarget = 0;
   for (const row of rows.rows) {
-    if (!projectName) projectName = row.project_name;
     const target = await getTargetForStage(row.stage_id, row.project_type_id);
     if (target) { sumUnits += parseFloat(row.units); sumTarget += target; }
   }
-  return { hasEntries: rows.rows.length > 0, sumUnits, sumTarget, projectName };
+  return { hasEntries: rows.rows.length > 0, sumUnits, sumTarget };
+}
+
+// Per project: how many supervisors and workers are on it, and which
+// workers each supervisor is responsible for there. This is the same
+// crew_supervisors / crew_members data that already gates who can see and
+// enter what — this just surfaces it.
+async function projectTeamBreakdown() {
+  const [projectsRes, crewsRes, supervisorsRes, membersRes] = await Promise.all([
+    pool.query('SELECT id, name FROM projects WHERE is_active = TRUE ORDER BY name'),
+    pool.query('SELECT id AS crew_id, name AS crew_name, project_id FROM crews'),
+    pool.query(`
+      SELECT cs.crew_id, u.id AS supervisor_id, u.name AS supervisor_name
+      FROM crew_supervisors cs JOIN users u ON u.id = cs.user_id AND u.is_active = TRUE
+    `),
+    pool.query(`
+      SELECT cm.crew_id, w.id AS worker_id, w.name AS worker_name
+      FROM crew_members cm JOIN workers w ON w.id = cm.worker_id AND w.is_active = TRUE
+    `),
+  ]);
+
+  return projectsRes.rows.map((project) => {
+    const projectCrews = crewsRes.rows.filter((c) => c.project_id === project.id);
+    const bySupervisor = new Map(); // supervisor_id -> { name, workers: Map<worker_id, name> }
+    const allWorkerIds = new Set();
+    const unassignedCrews = [];
+
+    projectCrews.forEach((crew) => {
+      const sups = supervisorsRes.rows.filter((s) => s.crew_id === crew.crew_id);
+      const members = membersRes.rows.filter((m) => m.crew_id === crew.crew_id);
+      members.forEach((m) => allWorkerIds.add(m.worker_id));
+
+      if (!sups.length) {
+        unassignedCrews.push(crew.crew_name);
+        return;
+      }
+      sups.forEach((s) => {
+        if (!bySupervisor.has(s.supervisor_id)) {
+          bySupervisor.set(s.supervisor_id, { name: s.supervisor_name, workers: new Map() });
+        }
+        const entry = bySupervisor.get(s.supervisor_id);
+        members.forEach((m) => entry.workers.set(m.worker_id, m.worker_name));
+      });
+    });
+
+    return {
+      name: project.name,
+      supervisorCount: bySupervisor.size,
+      workerCount: allWorkerIds.size,
+      supervisors: Array.from(bySupervisor.values()).map((s) => ({
+        name: s.name,
+        workers: Array.from(s.workers.values()).sort(),
+      })).sort((a, b) => a.name.localeCompare(b.name)),
+      unassignedCrews,
+    };
+  });
 }
 
 // For a given date, look at every crew that logged work and say how many
@@ -53,7 +106,7 @@ router.get('/', async (req, res) => {
   const todayStr = new Date().toISOString().slice(0, 10);
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 
-  const [activeSites, activeWorkers, entriesToday, entriesYesterday, todaySummary, yesterdaySummary, crewsRes, dailyRes] = await Promise.all([
+  const [activeSites, activeWorkers, entriesToday, entriesYesterday, todaySummary, yesterdaySummary, crewsRes, dailyRes, projectTeams] = await Promise.all([
     pool.query('SELECT COUNT(*)::int AS n FROM projects WHERE is_active = TRUE'),
     pool.query('SELECT COUNT(*)::int AS n FROM workers WHERE is_active = TRUE'),
     pool.query('SELECT COUNT(*)::int AS n FROM daily_entries WHERE entry_date = $1', [todayStr]),
@@ -61,9 +114,11 @@ router.get('/', async (req, res) => {
     crewTargetSummary(todayStr),
     crewTargetSummary(yesterdayStr),
     pool.query(`
-      SELECT c.id, c.name, a.name AS activity_name,
+      SELECT c.id, c.name, a.name AS activity_name, p.name AS project_name,
         (SELECT COUNT(*)::int FROM crew_members cm WHERE cm.crew_id = c.id) AS member_count
-      FROM crews c JOIN activities a ON a.id = c.activity_id
+      FROM crews c
+      JOIN activities a ON a.id = c.activity_id
+      LEFT JOIN projects p ON p.id = c.project_id
       ORDER BY c.name
     `),
     pool.query(`
@@ -72,11 +127,12 @@ router.get('/', async (req, res) => {
       WHERE entry_date >= CURRENT_DATE - INTERVAL '6 days'
       GROUP BY entry_date ORDER BY entry_date
     `),
+    projectTeamBreakdown(),
   ]);
 
   const crews = [];
   for (const crew of crewsRes.rows) {
-    const { hasEntries, sumUnits, sumTarget, projectName } = await crewDayAggregate(crew.id, todayStr);
+    const { hasEntries, sumUnits, sumTarget } = await crewDayAggregate(crew.id, todayStr);
 
     let status = 'none';
     let percent = null;
@@ -91,7 +147,7 @@ router.get('/', async (req, res) => {
       name: crew.name,
       activity_name: crew.activity_name,
       member_count: crew.member_count,
-      projectName,
+      projectName: crew.project_name,
       percent,
       status,
     });
@@ -134,6 +190,7 @@ router.get('/', async (req, res) => {
     crewsOnTargetDelta,
     crews,
     chart,
+    projectTeams,
   });
 });
 

@@ -53,11 +53,14 @@ CREATE TABLE workers (
     is_active BOOLEAN DEFAULT TRUE
 );
 
--- 8. CREWS: a saved team template (e.g. "Blockwork Crew A")
+-- 8. CREWS: a saved team template (e.g. "Blockwork Crew A"), currently
+--    working one project at a time. Management can transfer a crew to a
+--    different project; a crew is never on two projects at once.
 CREATE TABLE crews (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
-    activity_id INTEGER REFERENCES activities(id)
+    activity_id INTEGER REFERENCES activities(id),
+    project_id INTEGER REFERENCES projects(id)
 );
 
 -- 9. CREW MEMBERS: who's on each crew, and their incentive share

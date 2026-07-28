@@ -170,12 +170,15 @@ router.post('/activities/:id/stages', async (req, res) => {
 // --- CREWS ---
 router.get('/crews', async (req, res) => {
   const crews = await pool.query(`
-    SELECT c.*, a.name AS activity_name
-    FROM crews c LEFT JOIN activities a ON a.id = c.activity_id
+    SELECT c.*, a.name AS activity_name, p.name AS project_name
+    FROM crews c
+    LEFT JOIN activities a ON a.id = c.activity_id
+    LEFT JOIN projects p ON p.id = c.project_id
     ORDER BY c.name
   `);
   const workers = await pool.query('SELECT * FROM workers WHERE is_active = TRUE ORDER BY name');
   const activities = await pool.query('SELECT * FROM activities ORDER BY name');
+  const projects = await pool.query('SELECT * FROM projects WHERE is_active = TRUE ORDER BY name');
   const members = await pool.query(`
     SELECT cm.*, w.name AS worker_name, c.name AS crew_name
     FROM crew_members cm
@@ -188,14 +191,24 @@ router.get('/crews', async (req, res) => {
     FROM crew_supervisors cs JOIN users u ON u.id = cs.user_id
   `);
   res.render('setup/crews', {
-    crews: crews.rows, workers: workers.rows, activities: activities.rows, members: members.rows,
-    supervisors: supervisors.rows, crewSupervisors: crewSupervisors.rows,
+    crews: crews.rows, workers: workers.rows, activities: activities.rows, projects: projects.rows,
+    members: members.rows, supervisors: supervisors.rows, crewSupervisors: crewSupervisors.rows,
+    error: req.query.error,
   });
 });
 
 router.post('/crews', async (req, res) => {
-  const { name, activity_id } = req.body;
-  await pool.query('INSERT INTO crews (name, activity_id) VALUES ($1,$2)', [name, activity_id]);
+  const { name, activity_id, project_id } = req.body;
+  if (!project_id) return res.redirect('/setup/crews?error=project');
+  await pool.query('INSERT INTO crews (name, activity_id, project_id) VALUES ($1,$2,$3)', [name, activity_id, project_id]);
+  res.redirect('/setup/crews');
+});
+
+// A crew works one project at a time, but management can move it — e.g.
+// when a job wraps up and the crew starts the next site.
+router.post('/crews/:id/transfer', async (req, res) => {
+  const { project_id } = req.body;
+  await pool.query('UPDATE crews SET project_id = $1 WHERE id = $2', [project_id, req.params.id]);
   res.redirect('/setup/crews');
 });
 

@@ -24,20 +24,16 @@
         <label>Date</label>
         <input type="date" name="entry_date" value="<%= today %>" required>
 
-        <label>Project / Site</label>
-        <select name="project_id" required>
-          <% projects.forEach(p => { %>
-            <option value="<%= p.id %>"><%= p.name %></option>
-          <% }) %>
-        </select>
-
         <label>Crew</label>
         <select name="crew_id" id="crewSelect" required>
           <option value="">-- Select Crew --</option>
           <% crews.forEach(c => { %>
-            <option value="<%= c.id %>"><%= c.name %> (<%= c.activity_name %>)</option>
+            <option value="<%= c.id %>"><%= c.name %> (<%= c.activity_name %>) — <%= c.project_name || 'No project set' %></option>
           <% }) %>
         </select>
+
+        <label>Project / Site</label>
+        <input type="text" id="projectField" value="" readonly placeholder="Pick a crew above">
 
         <label>Entered By</label>
         <input type="text" value="<%= enteredByName %>" readonly>
@@ -52,6 +48,7 @@
 
   <script>
     const crewSelect = document.getElementById('crewSelect');
+    const projectField = document.getElementById('projectField');
     const container = document.getElementById('stagesContainer');
 
     function step(input, delta) {
@@ -61,10 +58,12 @@
 
     crewSelect.addEventListener('change', async () => {
       container.innerHTML = '';
+      projectField.value = '';
       const crewId = crewSelect.value;
       if (!crewId) return;
       const res = await fetch('/entry/stages/' + crewId);
-      const stages = await res.json();
+      const { project, stages } = await res.json();
+      projectField.value = project ? project.name : '';
       stages.forEach((stage, i) => {
         const row = document.createElement('div');
         row.className = 'card stage-card';

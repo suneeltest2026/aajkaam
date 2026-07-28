@@ -9,12 +9,17 @@
   <main>
     <div class="card">
       <h2>New Crew</h2>
+      <% if (error === 'project') { %><p class="auth-error">Every crew needs a project — pick one below.</p><% } %>
       <form method="POST" action="/setup/crews">
         <label>Crew Name</label>
         <input type="text" name="name" placeholder="e.g. Blockwork Crew A" required>
         <label>Activity</label>
         <select name="activity_id" required>
           <% activities.forEach(a => { %><option value="<%= a.id %>"><%= a.name %></option><% }) %>
+        </select>
+        <label>Project / Site</label>
+        <select name="project_id" required>
+          <% projects.forEach(p => { %><option value="<%= p.id %>"><%= p.name %></option><% }) %>
         </select>
         <button type="submit">Add Crew</button>
       </form>
@@ -23,6 +28,15 @@
     <% crews.forEach(c => { %>
     <div class="card">
       <h3><%= c.name %> — <%= c.activity_name %></h3>
+      <div style="display:flex;align-items:center;gap:10px;margin:-8px 0 16px;flex-wrap:wrap;">
+        <span class="pill pill--neutral"><svg class="ic-sm" width="12" height="12"><use href="#i-building"></use></svg><%= c.project_name || 'No project set' %></span>
+        <form method="POST" action="/setup/crews/<%= c.id %>/transfer" style="display:flex;gap:6px;align-items:center;margin:0;">
+          <select name="project_id" required style="min-height:36px;padding:6px 10px;font-size:12.5px;">
+            <% projects.forEach(p => { %><option value="<%= p.id %>" <%= p.id === c.project_id ? 'selected' : '' %>><%= p.name %></option><% }) %>
+          </select>
+          <button type="submit" style="width:auto;min-height:36px;margin:0;padding:0 12px;font-size:12.5px;">Transfer</button>
+        </form>
+      </div>
       <div class="table-wrap">
       <table>
         <tr><th>Worker</th><th>Incentive Share %</th></tr>
