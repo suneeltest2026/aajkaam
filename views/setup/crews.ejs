@@ -4,18 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AajKaam — Crews</title><link rel="stylesheet" href="/style.css"></head>
-<body>
-  <header><h1>AAJKAAM</h1></header>
-  <div class="nav-links"><a href="/entry">Daily Entry</a><a href="/entry/report">Report</a><a href="/setup">Setup</a></div>
+<body class="role-supervisor">
+  <%- include('../partials/nav', {current: 'setup'}) %>
   <main>
     <div class="card">
       <h2>New Crew</h2>
+      <% if (error === 'project') { %><p class="auth-error">Every crew needs a project — pick one below.</p><% } %>
       <form method="POST" action="/setup/crews">
         <label>Crew Name</label>
         <input type="text" name="name" placeholder="e.g. Blockwork Crew A" required>
         <label>Activity</label>
         <select name="activity_id" required>
           <% activities.forEach(a => { %><option value="<%= a.id %>"><%= a.name %></option><% }) %>
+        </select>
+        <label>Project / Site</label>
+        <select name="project_id" required>
+          <% projects.forEach(p => { %><option value="<%= p.id %>"><%= p.name %></option><% }) %>
         </select>
         <button type="submit">Add Crew</button>
       </form>
@@ -24,6 +28,15 @@
     <% crews.forEach(c => { %>
     <div class="card">
       <h3><%= c.name %> — <%= c.activity_name %></h3>
+      <div style="display:flex;align-items:center;gap:10px;margin:-8px 0 16px;flex-wrap:wrap;">
+        <span class="pill pill--neutral"><svg class="ic-sm" width="12" height="12"><use href="#i-building"></use></svg><%= c.project_name || 'No project set' %></span>
+        <form method="POST" action="/setup/crews/<%= c.id %>/transfer" style="display:flex;gap:6px;align-items:center;margin:0;">
+          <select name="project_id" required style="min-height:36px;padding:6px 10px;font-size:12.5px;">
+            <% projects.forEach(p => { %><option value="<%= p.id %>" <%= p.id === c.project_id ? 'selected' : '' %>><%= p.name %></option><% }) %>
+          </select>
+          <button type="submit" style="width:auto;min-height:36px;margin:0;padding:0 12px;font-size:12.5px;">Transfer</button>
+        </form>
+      </div>
       <div class="table-wrap">
       <table>
         <tr><th>Worker</th><th>Incentive Share %</th></tr>
@@ -41,6 +54,33 @@
         <input type="number" step="0.01" name="incentive_share_percent" placeholder="60" required>
         <button type="submit">Add to Crew</button>
       </form>
+
+      <h3 style="margin-top:24px;">Supervisors allowed to log for this crew</h3>
+      <p style="color:var(--steel);font-size:13px;margin-top:-8px;">Only supervisors listed here can pick this crew in Daily Entry. Management can always log for any crew.</p>
+      <% const assigned = crewSupervisors.filter(cs => cs.crew_id === c.id); %>
+      <% if (assigned.length) { %>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+          <% assigned.forEach(cs => { %>
+            <form method="POST" action="/setup/crews/<%= c.id %>/supervisors/<%= cs.user_id %>/remove" style="margin:0;">
+              <button type="submit" class="pill pill--neutral" style="width:auto;min-height:0;margin:0;border:1px solid var(--line);cursor:pointer;">
+                <%= cs.supervisor_name %> &times;
+              </button>
+            </form>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p style="color:var(--steel);font-size:13px;">No supervisors assigned yet — nobody can log entries for this crew until one is added.</p>
+      <% } %>
+      <% const unassigned = supervisors.filter(s => !assigned.some(cs => cs.user_id === s.id)); %>
+      <% if (unassigned.length) { %>
+        <form method="POST" action="/setup/crews/<%= c.id %>/supervisors">
+          <label>Add Supervisor</label>
+          <select name="user_id" required>
+            <% unassigned.forEach(s => { %><option value="<%= s.id %>"><%= s.name %></option><% }) %>
+          </select>
+          <button type="submit">Assign Supervisor</button>
+        </form>
+      <% } %>
     </div>
     <% }) %>
   </main>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Admin setup</title><link rel="stylesheet" href="/style.css"></head>
+<body class="role-management">
+  <%- include('../partials/nav') %>
+  <main>
+    <div class="card">
+      <h2>Add an Admin login</h2>
+      <p style="color:var(--steel);">Everything Management can do, plus the Activity log — a record of every login and change across the app, including Management's own actions. This page isn't linked anywhere; keep its URL to whoever should hold this access.</p>
+      <% if (error === 'mismatch') { %><p class="auth-error">PIN and confirmation didn't match — try again.</p><% } %>
+      <% if (created) { %><p class="pill pill--good" style="margin-bottom:14px;"><svg class="ic-sm" width="12" height="12"><use href="#i-check"></use></svg>Admin login created</p><% } %>
+      <form method="POST" action="/admin/setup">
+        <label>Name</label>
+        <input type="text" name="name" required>
+        <label>PIN</label>
+        <input type="password" name="pin" inputmode="numeric" minlength="4" maxlength="6" required>
+        <label>Confirm PIN</label>
+        <input type="password" name="confirm_pin" inputmode="numeric" minlength="4" maxlength="6" required>
+        <button type="submit">Add Admin Login</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

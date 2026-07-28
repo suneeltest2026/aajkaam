@@ -4,23 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AajKaam — Setup</title><link rel="stylesheet" href="/style.css"></head>
-<body>
-  <header><h1>AAJKAAM</h1></header>
-  <div class="nav-links">
-    <a href="/entry">Daily Entry</a>
-    <a href="/entry/report">Report</a>
-    <a href="/setup">Setup</a>
-  </div>
+<body class="role-supervisor">
+  <%- include('../partials/nav', {current: 'setup'}) %>
   <main>
     <div class="card">
       <h2>Setup</h2>
-      <p style="color:var(--text-dim)">Define the rules once — trades, activities, crews, and targets.</p>
+      <p style="color:var(--steel)">Define the rules once — trades, activities, crews, and targets.</p>
       <p><a href="/setup/trades">1. Trades &amp; Skill Levels →</a></p>
       <p><a href="/setup/workers">2. Workers →</a></p>
       <p><a href="/setup/projects">3. Project Types &amp; Projects →</a></p>
       <p><a href="/setup/activities">4. Activities &amp; Stages →</a></p>
       <p><a href="/setup/crews">5. Crews &amp; Members →</a></p>
       <p><a href="/setup/targets">6. Targets →</a></p>
+      <p><a href="/setup/users">7. Users &amp; Logins →</a></p>
     </div>
   </main>
 </body>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Get started</title><link rel="stylesheet" href="/style.css"></head>
+<body class="role-management">
+  <%- include('../partials/icons') %>
+  <header class="site-header"><span class="wordmark"><svg class="ic" width="18" height="18"><use href="#i-hardhat"></use></svg>AAJKAAM</span></header>
+  <main>
+    <div class="card">
+      <h2>Welcome to AajKaam</h2>
+      <p style="color:var(--steel);">No logins exist yet. Create the first Management account to get started — from there you can add Supervisor and Worker logins too.</p>
+      <form method="GET" action="/setup/users">
+        <button type="submit">Create the first Management login</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Enter PIN</title><link rel="stylesheet" href="/style.css"></head>
+<body class="role-<%= role %>">
+  <%- include('../partials/icons') %>
+  <header class="site-header"><span class="wordmark"><svg class="ic" width="18" height="18"><use href="#i-hardhat"></use></svg>AAJKAAM</span></header>
+  <main>
+    <div class="card">
+      <h2>Hi, <%= account.name %></h2>
+      <p style="color:var(--steel);margin-top:-8px;">Enter your PIN to continue.</p>
+      <% if (error) { %><p class="auth-error">That PIN didn't match — try again.</p><% } %>
+      <form method="POST" action="/login/verify">
+        <input type="hidden" name="role" value="<%= role %>">
+        <input type="hidden" name="user_id" value="<%= account.id %>">
+        <label>PIN</label>
+        <input class="pin-input" type="password" name="pin" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="6" autofocus required>
+        <button type="submit">Log in</button>
+      </form>
+      <p style="margin-top:20px;"><a href="/login?role=<%= role %>">&larr; Not you?</a></p>
+    </div>
+  </main>
+</body>
+</html>

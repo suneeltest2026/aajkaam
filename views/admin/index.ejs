@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Activity</title><link rel="stylesheet" href="/style.css"></head>
+<body class="role-management">
+  <%- include('../partials/nav', {current: 'admin'}) %>
+  <main style="max-width:900px;">
+    <div class="card">
+      <h2>Activity log</h2>
+      <p style="color:var(--steel);font-size:13px;margin-top:-8px;">Every login and change across the app, including Management's own actions. Most recent 300 events.</p>
+      <form method="GET" action="/admin" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+        <div style="flex:1;min-width:140px;">
+          <label>Role</label>
+          <select name="role">
+            <option value="">All roles</option>
+            <% roles.forEach(r => { %><option value="<%= r %>" <%= filters.role === r ? 'selected' : '' %>><%= r %></option><% }) %>
+          </select>
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label>Action</label>
+          <select name="action">
+            <option value="">All actions</option>
+            <% actions.forEach(a => { %><option value="<%= a %>" <%= filters.action === a ? 'selected' : '' %>><%= a.replace(/_/g, ' ') %></option><% }) %>
+          </select>
+        </div>
+        <div style="flex:1;min-width:130px;">
+          <label>From</label>
+          <input type="date" name="from" value="<%= filters.from %>">
+        </div>
+        <div style="flex:1;min-width:130px;">
+          <label>To</label>
+          <input type="date" name="to" value="<%= filters.to %>">
+        </div>
+        <button type="submit" style="width:auto;margin:0;padding:0 20px;min-height:50px;">Filter</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <tr><th>When</th><th>Who</th><th>Action</th><th>Details</th></tr>
+          <% logs.forEach(l => { %>
+            <tr>
+              <td style="font-family:var(--mono);font-size:12.5px;white-space:nowrap;"><%= l.created_at.toISOString().slice(0,16).replace('T',' ') %></td>
+              <td>
+                <%= l.user_name || '—' %>
+                <% if (l.role) { %><span style="color:var(--steel);font-size:11.5px;text-transform:capitalize;"> (<%= l.role %>)</span><% } %>
+              </td>
+              <td>
+                <% if (l.action === 'login') { %>
+                  <span class="status status--good"><svg class="ic-sm" width="11" height="11"><use href="#i-check"></use></svg>Login</span>
+                <% } else if (l.action === 'login_failed') { %>
+                  <span class="status status--bad"><svg class="ic-sm" width="11" height="11"><use href="#i-alert"></use></svg>Login failed</span>
+                <% } else if (l.action === 'user_deactivated') { %>
+                  <span class="status status--warn"><svg class="ic-sm" width="11" height="11"><use href="#i-dot"></use></svg>User deactivated</span>
+                <% } else { %>
+                  <span style="text-transform:capitalize;"><%= l.action.replace(/_/g, ' ') %></span>
+                <% } %>
+              </td>
+              <td style="color:var(--steel);font-size:13px;"><%= l.details || '—' %></td>
+            </tr>
+          <% }) %>
+          <% if (!logs.length) { %><tr><td colspan="4" style="color:var(--steel);">No activity recorded yet.</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
