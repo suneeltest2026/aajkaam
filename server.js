@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const { attachUser } = require('./middleware/auth');
+const { ensureSchema } = require('./db/ensureSchema');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,4 +27,9 @@ app.use('/worker', require('./routes/worker'));
 app.use('/management', require('./routes/management'));
 app.use('/admin', require('./routes/admin'));
 
-app.listen(PORT, () => console.log(`AajKaam running on port ${PORT}`));
+ensureSchema()
+  .then(() => app.listen(PORT, () => console.log(`AajKaam running on port ${PORT}`)))
+  .catch((err) => {
+    console.error('Schema check failed, refusing to start:', err);
+    process.exit(1);
+  });
