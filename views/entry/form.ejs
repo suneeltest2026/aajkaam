@@ -14,6 +14,12 @@
       <% if (typeof saved !== 'undefined') { %>
         <p class="pill pill--good" style="margin-bottom:10px;"><svg class="ic-sm" width="12" height="12"><use href="#i-check"></use></svg>Saved successfully</p>
       <% } %>
+      <% if (error === 'crew') { %>
+        <p class="auth-error">That crew isn't assigned to you — ask Management to add you in Setup &rarr; Crews.</p>
+      <% } %>
+      <% if (!crews.length) { %>
+        <p style="color:var(--steel);">No crews are assigned to you yet — ask Management to add you to a crew in Setup &rarr; Crews.</p>
+      <% } else { %>
       <form method="POST" action="/entry">
         <label>Date</label>
         <input type="date" name="entry_date" value="<%= today %>" required>
@@ -40,6 +46,7 @@
 
         <button type="submit">Save Today's Entry</button>
       </form>
+      <% } %>
     </div>
   </main>
 

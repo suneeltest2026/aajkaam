@@ -93,7 +93,16 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 12. DAILY ENTRIES: what the supervisor records each day
+-- 12. CREW SUPERVISORS: which supervisor logins may log work for which
+--     crew. Management is exempt from this — they can log for any crew.
+CREATE TABLE crew_supervisors (
+    id SERIAL PRIMARY KEY,
+    crew_id INTEGER REFERENCES crews(id),
+    user_id INTEGER REFERENCES users(id),
+    UNIQUE (crew_id, user_id)
+);
+
+-- 13. DAILY ENTRIES: what the supervisor records each day
 CREATE TABLE daily_entries (
     id SERIAL PRIMARY KEY,
     entry_date DATE NOT NULL,
@@ -107,7 +116,7 @@ CREATE TABLE daily_entries (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 13. RECOGNITION: HR flags/acknowledgements for workers (no pay processing)
+-- 14. RECOGNITION: HR flags/acknowledgements for workers (no pay processing)
 CREATE TABLE recognitions (
     id SERIAL PRIMARY KEY,
     worker_id INTEGER REFERENCES workers(id),

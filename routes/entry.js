@@ -5,18 +5,31 @@ const { requireRole } = require('../middleware/auth');
 
 router.use(requireRole('supervisor', 'management'));
 
+// Which crews a user may log entries for. Management can log for any crew;
+// a supervisor is limited to crews assigned to them in Setup -> Crews.
+// Returns null for "no restriction", otherwise an array of crew ids.
+async function allowedCrewIds(user) {
+  if (user.role === 'management') return null;
+  const result = await pool.query('SELECT crew_id FROM crew_supervisors WHERE user_id = $1', [user.id]);
+  return result.rows.map((r) => r.crew_id);
+}
+
 // Show the daily entry form
 router.get('/', async (req, res) => {
-  const crews = await pool.query(`
-    SELECT c.*, a.name AS activity_name FROM crews c
-    JOIN activities a ON a.id = c.activity_id ORDER BY c.name
-  `);
+  const allowed = await allowedCrewIds(req.user);
+  const crews = await pool.query(
+    allowed
+      ? `SELECT c.*, a.name AS activity_name FROM crews c JOIN activities a ON a.id = c.activity_id WHERE c.id = ANY($1) ORDER BY c.name`
+      : `SELECT c.*, a.name AS activity_name FROM crews c JOIN activities a ON a.id = c.activity_id ORDER BY c.name`,
+    allowed ? [allowed] : []
+  );
   const projects = await pool.query('SELECT * FROM projects WHERE is_active = TRUE ORDER BY name');
   res.render('entry/form', {
     crews: crews.rows,
     projects: projects.rows,
     today: new Date().toISOString().slice(0, 10),
     saved: req.query.saved,
+    error: req.query.error,
     enteredByName: req.user.name,
   });
 });
@@ -24,6 +37,9 @@ router.get('/', async (req, res) => {
 // When a crew + activity is picked, show its stages so supervisor can enter units per stage
 router.get('/stages/:crewId', async (req, res) => {
   const { crewId } = req.params;
+  const allowed = await allowedCrewIds(req.user);
+  if (allowed && !allowed.includes(Number(crewId))) return res.json([]);
+
   const crew = await pool.query(`
     SELECT c.*, a.id AS activity_id FROM crews c
     JOIN activities a ON a.id = c.activity_id
@@ -40,6 +56,13 @@ router.get('/stages/:crewId', async (req, res) => {
 // Save a day's entries (one row per stage worked on)
 router.post('/', async (req, res) => {
   const { entry_date, project_id, crew_id, stage_ids, units, hours } = req.body;
+
+  // The crew dropdown is already filtered client-side, but a supervisor
+  // could still POST an arbitrary crew_id directly — check for real here.
+  const allowed = await allowedCrewIds(req.user);
+  if (allowed && !allowed.includes(Number(crew_id))) {
+    return res.redirect('/entry?error=crew');
+  }
 
   // stage_ids/units/hours arrive as arrays (one item per stage row on the form)
   const stageIdList = Array.isArray(stage_ids) ? stage_ids : [stage_ids];

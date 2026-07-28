@@ -182,14 +182,36 @@ router.get('/crews', async (req, res) => {
     JOIN workers w ON w.id = cm.worker_id
     JOIN crews c ON c.id = cm.crew_id
   `);
+  const supervisors = await pool.query(`SELECT id, name FROM users WHERE role = 'supervisor' AND is_active = TRUE ORDER BY name`);
+  const crewSupervisors = await pool.query(`
+    SELECT cs.id, cs.crew_id, u.id AS user_id, u.name AS supervisor_name
+    FROM crew_supervisors cs JOIN users u ON u.id = cs.user_id
+  `);
   res.render('setup/crews', {
-    crews: crews.rows, workers: workers.rows, activities: activities.rows, members: members.rows
+    crews: crews.rows, workers: workers.rows, activities: activities.rows, members: members.rows,
+    supervisors: supervisors.rows, crewSupervisors: crewSupervisors.rows,
   });
 });
 
 router.post('/crews', async (req, res) => {
   const { name, activity_id } = req.body;
   await pool.query('INSERT INTO crews (name, activity_id) VALUES ($1,$2)', [name, activity_id]);
+  res.redirect('/setup/crews');
+});
+
+router.post('/crews/:id/supervisors', async (req, res) => {
+  const { id } = req.params;
+  const { user_id } = req.body;
+  await pool.query(
+    'INSERT INTO crew_supervisors (crew_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+    [id, user_id]
+  );
+  res.redirect('/setup/crews');
+});
+
+router.post('/crews/:crewId/supervisors/:userId/remove', async (req, res) => {
+  const { crewId, userId } = req.params;
+  await pool.query('DELETE FROM crew_supervisors WHERE crew_id = $1 AND user_id = $2', [crewId, userId]);
   res.redirect('/setup/crews');
 });
 
