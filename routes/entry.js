@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 const { requireRole } = require('../middleware/auth');
+const { logActivity } = require('../db/activity');
 
-router.use(requireRole('supervisor', 'management'));
+router.use(requireRole('supervisor', 'management', 'admin'));
 
-// Which crews a user may log entries for. Management can log for any crew;
-// a supervisor is limited to crews assigned to them in Setup -> Crews.
+// Which crews a user may log entries for. Management/admin can log for any
+// crew; a supervisor is limited to crews assigned to them in Setup -> Crews.
 // Returns null for "no restriction", otherwise an array of crew ids.
 async function allowedCrewIds(user) {
-  if (user.role === 'management') return null;
+  if (user.role === 'management' || user.role === 'admin') return null;
   const result = await pool.query('SELECT crew_id FROM crew_supervisors WHERE user_id = $1', [user.id]);
   return result.rows.map((r) => r.crew_id);
 }
@@ -71,7 +72,7 @@ router.post('/', async (req, res) => {
 
   // The project is never taken from the form — it's whatever project the
   // crew is currently assigned to, looked up fresh here.
-  const crewRow = await pool.query('SELECT project_id FROM crews WHERE id = $1', [crew_id]);
+  const crewRow = await pool.query('SELECT name, project_id FROM crews WHERE id = $1', [crew_id]);
   if (!crewRow.rows.length) return res.redirect('/entry?error=crew');
   const project_id = crewRow.rows[0].project_id;
 
@@ -82,6 +83,7 @@ router.post('/', async (req, res) => {
 
   // entered_by always comes from the logged-in session, never the form —
   // that's what makes "supervisor sees only their own entries" trustworthy.
+  let savedCount = 0;
   for (let i = 0; i < stageIdList.length; i++) {
     if (!unitsList[i]) continue; // skip stages left blank that day
     await pool.query(
@@ -89,6 +91,14 @@ router.post('/', async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [entry_date, project_id, crew_id, stageIdList[i], unitsList[i], hoursList[i] || null, req.user.name, req.user.id]
     );
+    savedCount++;
+  }
+  if (savedCount > 0) {
+    await logActivity({
+      userId: req.user.id, userName: req.user.name, role: req.user.role,
+      action: 'entry_created',
+      details: `${savedCount} stage(s) for '${crewRow.rows[0].name}' on ${entry_date}`,
+    });
   }
   res.redirect('/entry?saved=1');
 });

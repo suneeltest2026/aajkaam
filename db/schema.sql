@@ -84,12 +84,14 @@ CREATE TABLE targets (
 );
 
 -- 11. USERS: login accounts. A worker's login links to their `workers` row
---     (worker_id); supervisor and management accounts are login-only, no
+--     (worker_id); supervisor/management/admin accounts are login-only, no
 --     separate profile table. PIN is stored hashed, never in plain text.
+--     'admin' is a tier above management: same access, plus the activity
+--     log (activity_log below), including management's own actions.
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('worker','supervisor','management')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('worker','supervisor','management','admin')),
     worker_id INTEGER REFERENCES workers(id), -- set only when role = 'worker'
     pin_hash VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
@@ -125,5 +127,19 @@ CREATE TABLE recognitions (
     worker_id INTEGER REFERENCES workers(id),
     note VARCHAR(255) NOT NULL,          -- e.g. "Top Performer - July 2026"
     given_by VARCHAR(150),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 15. ACTIVITY LOG: an audit trail for the admin role. Never store a PIN
+--     value here, only that a login attempt happened and whether it
+--     succeeded — user_name/role are cached so the log stays readable
+--     even if the account is later renamed or deactivated.
+CREATE TABLE activity_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    user_name VARCHAR(150),
+    role VARCHAR(20),
+    action VARCHAR(100) NOT NULL,
+    details VARCHAR(255),
     created_at TIMESTAMP DEFAULT NOW()
 );

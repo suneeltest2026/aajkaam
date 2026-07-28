@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 const { hashPin } = require('../db/pin');
+const { logActivity } = require('../db/activity');
 
-// Setup is Management-only, with one bootstrap exception: when the system
-// has no logins at all yet, /setup/users stays open just long enough to
-// create the first Management account.
+// Setup is Management/admin-only, with one bootstrap exception: when the
+// system has no logins at all yet, /setup/users stays open just long
+// enough to create the first Management account.
 router.use(async (req, res, next) => {
-  if (req.user && req.user.role === 'management') return next();
+  if (req.user && (req.user.role === 'management' || req.user.role === 'admin')) return next();
   if (req.path === '/users' || req.path.startsWith('/users')) {
     const count = await pool.query('SELECT COUNT(*)::int AS n FROM users');
     if (count.rows[0].n === 0) return next();
@@ -21,8 +22,12 @@ router.get('/', (req, res) => {
 });
 
 // --- USERS (login accounts) ---
+// Admin accounts are deliberately invisible here, even to management —
+// they're created and managed only from the separate, unlinked /admin
+// setup page. This list, and every action below, only ever touches
+// non-admin accounts.
 router.get('/users', async (req, res) => {
-  const users = await pool.query('SELECT id, name, role, worker_id, is_active FROM users ORDER BY role, name');
+  const users = await pool.query(`SELECT id, name, role, worker_id, is_active FROM users WHERE role != 'admin' ORDER BY role, name`);
   const availableWorkers = await pool.query(`
     SELECT w.id, w.name FROM workers w
     LEFT JOIN users u ON u.worker_id = w.id
@@ -32,10 +37,19 @@ router.get('/users', async (req, res) => {
   res.render('setup/users', { users: users.rows, availableWorkers: availableWorkers.rows, error: req.query.error });
 });
 
+// Who performed the action, for the activity log — null during the one-time
+// bootstrap flow, when nobody is logged in yet.
+function actor(req) {
+  return req.user
+    ? { userId: req.user.id, userName: req.user.name, role: req.user.role }
+    : { userId: null, userName: 'System (bootstrap)', role: null };
+}
+
 router.post('/users/management', async (req, res) => {
   const { name, pin, confirm_pin } = req.body;
   if (pin !== confirm_pin) return res.redirect('/setup/users?error=mismatch');
   await pool.query('INSERT INTO users (name, role, pin_hash) VALUES ($1,$2,$3)', [name, 'management', hashPin(pin)]);
+  await logActivity({ ...actor(req), action: 'user_created', details: `Created management login for ${name}` });
   res.redirect('/setup/users');
 });
 
@@ -43,6 +57,7 @@ router.post('/users/supervisor', async (req, res) => {
   const { name, pin, confirm_pin } = req.body;
   if (pin !== confirm_pin) return res.redirect('/setup/users?error=mismatch');
   await pool.query('INSERT INTO users (name, role, pin_hash) VALUES ($1,$2,$3)', [name, 'supervisor', hashPin(pin)]);
+  await logActivity({ ...actor(req), action: 'user_created', details: `Created supervisor login for ${name}` });
   res.redirect('/setup/users');
 });
 
@@ -55,18 +70,35 @@ router.post('/users/worker', async (req, res) => {
     'INSERT INTO users (name, role, worker_id, pin_hash) VALUES ($1,$2,$3,$4)',
     [worker.rows[0].name, 'worker', worker_id, hashPin(pin)]
   );
+  await logActivity({ ...actor(req), action: 'user_created', details: `Created worker login for ${worker.rows[0].name}` });
   res.redirect('/setup/users');
 });
 
 router.post('/users/:id/reset-pin', async (req, res) => {
   const { pin, confirm_pin } = req.body;
   if (pin !== confirm_pin) return res.redirect('/setup/users?error=mismatch');
+  const target = await pool.query('SELECT name, role FROM users WHERE id = $1', [req.params.id]);
+  // Management can't touch an admin account even by guessing its id.
+  if (!target.rows.length || (target.rows[0].role === 'admin' && req.user.role !== 'admin')) {
+    return res.redirect('/setup/users');
+  }
   await pool.query('UPDATE users SET pin_hash = $1 WHERE id = $2', [hashPin(pin), req.params.id]);
+  await logActivity({ ...actor(req), action: 'pin_reset', details: `Reset PIN for ${target.rows[0].name} (${target.rows[0].role})` });
   res.redirect('/setup/users');
 });
 
 router.post('/users/:id/toggle-active', async (req, res) => {
+  const target = await pool.query('SELECT name, role, is_active FROM users WHERE id = $1', [req.params.id]);
+  if (!target.rows.length || (target.rows[0].role === 'admin' && req.user.role !== 'admin')) {
+    return res.redirect('/setup/users');
+  }
   await pool.query('UPDATE users SET is_active = NOT is_active WHERE id = $1', [req.params.id]);
+  const willBeActive = !target.rows[0].is_active;
+  await logActivity({
+    ...actor(req),
+    action: willBeActive ? 'user_reactivated' : 'user_deactivated',
+    details: `${target.rows[0].name} (${target.rows[0].role})`,
+  });
   res.redirect('/setup/users');
 });
 
@@ -201,6 +233,8 @@ router.post('/crews', async (req, res) => {
   const { name, activity_id, project_id } = req.body;
   if (!project_id) return res.redirect('/setup/crews?error=project');
   await pool.query('INSERT INTO crews (name, activity_id, project_id) VALUES ($1,$2,$3)', [name, activity_id, project_id]);
+  const project = await pool.query('SELECT name FROM projects WHERE id = $1', [project_id]);
+  await logActivity({ ...actor(req), action: 'crew_created', details: `'${name}' on ${project.rows[0] ? project.rows[0].name : 'project #' + project_id}` });
   res.redirect('/setup/crews');
 });
 
@@ -208,7 +242,14 @@ router.post('/crews', async (req, res) => {
 // when a job wraps up and the crew starts the next site.
 router.post('/crews/:id/transfer', async (req, res) => {
   const { project_id } = req.body;
+  const [crew, project] = await Promise.all([
+    pool.query('SELECT name FROM crews WHERE id = $1', [req.params.id]),
+    pool.query('SELECT name FROM projects WHERE id = $1', [project_id]),
+  ]);
   await pool.query('UPDATE crews SET project_id = $1 WHERE id = $2', [project_id, req.params.id]);
+  if (crew.rows.length) {
+    await logActivity({ ...actor(req), action: 'crew_transferred', details: `'${crew.rows[0].name}' to ${project.rows[0] ? project.rows[0].name : 'project #' + project_id}` });
+  }
   res.redirect('/setup/crews');
 });
 
@@ -219,12 +260,22 @@ router.post('/crews/:id/supervisors', async (req, res) => {
     'INSERT INTO crew_supervisors (crew_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
     [id, user_id]
   );
+  const [crew, supervisor] = await Promise.all([
+    pool.query('SELECT name FROM crews WHERE id = $1', [id]),
+    pool.query('SELECT name FROM users WHERE id = $1', [user_id]),
+  ]);
+  await logActivity({ ...actor(req), action: 'supervisor_assigned', details: `${supervisor.rows[0] ? supervisor.rows[0].name : 'user #' + user_id} to '${crew.rows[0] ? crew.rows[0].name : 'crew #' + id}'` });
   res.redirect('/setup/crews');
 });
 
 router.post('/crews/:crewId/supervisors/:userId/remove', async (req, res) => {
   const { crewId, userId } = req.params;
   await pool.query('DELETE FROM crew_supervisors WHERE crew_id = $1 AND user_id = $2', [crewId, userId]);
+  const [crew, supervisor] = await Promise.all([
+    pool.query('SELECT name FROM crews WHERE id = $1', [crewId]),
+    pool.query('SELECT name FROM users WHERE id = $1', [userId]),
+  ]);
+  await logActivity({ ...actor(req), action: 'supervisor_removed', details: `${supervisor.rows[0] ? supervisor.rows[0].name : 'user #' + userId} from '${crew.rows[0] ? crew.rows[0].name : 'crew #' + crewId}'` });
   res.redirect('/setup/crews');
 });
 

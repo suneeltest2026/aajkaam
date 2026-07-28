@@ -16,7 +16,7 @@ app.use(cookieParser(COOKIE_SECRET));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(attachUser);
 
-const ROLE_HOME = { worker: '/worker', supervisor: '/entry', management: '/management' };
+const ROLE_HOME = { worker: '/worker', supervisor: '/entry', management: '/management', admin: '/admin' };
 app.get('/', (req, res) => res.redirect(req.user ? ROLE_HOME[req.user.role] : '/login'));
 
 app.use('/', require('./routes/auth'));
@@ -24,5 +24,6 @@ app.use('/setup', require('./routes/setup'));
 app.use('/entry', require('./routes/entry'));
 app.use('/worker', require('./routes/worker'));
 app.use('/management', require('./routes/management'));
+app.use('/admin', require('./routes/admin'));
 
 app.listen(PORT, () => console.log(`AajKaam running on port ${PORT}`));

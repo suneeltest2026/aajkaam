@@ -4,7 +4,7 @@ const pool = require('../db/pool');
 const { getTargetForStage } = require('../db/targets');
 const { requireRole } = require('../middleware/auth');
 
-router.use(requireRole('management'));
+router.use(requireRole('management', 'admin'));
 
 // A stage can have more than one entry in a day, so group by stage first —
 // otherwise a repeated stage would count its target twice and understate
