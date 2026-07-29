@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db/pool');
 const { hashPin } = require('../db/pin');
 const { logActivity } = require('../db/activity');
+const PDFDocument = require('pdfkit');
 
 // Setup is Management/admin-only, with one bootstrap exception: when the
 // system has no logins at all yet, /setup/users stays open just long
@@ -273,6 +274,146 @@ router.post('/targets', async (req, res) => {
     [activity_id, stage_id, project_type_id || null, target_per_day, isGeneral]
   );
   res.redirect('/setup/targets');
+});
+
+// --- SUMMARY & EXPORT ---
+// Pulls together everything entered across Setup into one place, and feeds
+// the CSV/PDF exports below. Deliberately excludes admin accounts and PINs,
+// same rule as everywhere else in Setup.
+async function getSetupSummaryData() {
+  const [trades, skillLevels, projectTypes, projects, activities, stages, workers, users, targets] = await Promise.all([
+    pool.query('SELECT * FROM trades ORDER BY name'),
+    pool.query('SELECT * FROM skill_levels ORDER BY name'),
+    pool.query('SELECT * FROM project_types ORDER BY name'),
+    pool.query(`
+      SELECT p.*, pt.name AS project_type_name
+      FROM projects p LEFT JOIN project_types pt ON pt.id = p.project_type_id
+      WHERE p.is_active = TRUE ORDER BY p.name
+    `),
+    pool.query('SELECT * FROM activities ORDER BY name'),
+    pool.query(`
+      SELECT s.*, a.name AS activity_name
+      FROM activity_stages s JOIN activities a ON a.id = s.activity_id
+      ORDER BY a.name, s.sequence_order
+    `),
+    pool.query(`
+      SELECT w.*, t.name AS trade_name, sl.name AS skill_level_name, p.name AS project_name
+      FROM workers w
+      LEFT JOIN trades t ON t.id = w.trade_id
+      LEFT JOIN skill_levels sl ON sl.id = w.skill_level_id
+      LEFT JOIN projects p ON p.id = w.project_id
+      WHERE w.is_active = TRUE ORDER BY w.name
+    `),
+    pool.query(`
+      SELECT u.name, u.role, u.is_active, p.name AS project_name
+      FROM users u LEFT JOIN projects p ON p.id = u.project_id
+      WHERE u.role != 'admin' ORDER BY u.role, u.name
+    `),
+    pool.query(`
+      SELECT t.*, s.name AS stage_name, a.name AS activity_name, pt.name AS project_type_name
+      FROM targets t
+      JOIN activity_stages s ON s.id = t.stage_id
+      JOIN activities a ON a.id = t.activity_id
+      LEFT JOIN project_types pt ON pt.id = t.project_type_id
+      ORDER BY a.name, s.sequence_order
+    `),
+  ]);
+  return {
+    trades: trades.rows,
+    skillLevels: skillLevels.rows,
+    projectTypes: projectTypes.rows,
+    projects: projects.rows,
+    activities: activities.rows,
+    stages: stages.rows,
+    workers: workers.rows,
+    users: users.rows,
+    targets: targets.rows,
+  };
+}
+
+router.get('/summary', async (req, res) => {
+  const data = await getSetupSummaryData();
+  res.render('setup/summary', data);
+});
+
+function escapeCsv(value) {
+  const str = value === null || value === undefined ? '' : String(value);
+  if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+  return str;
+}
+
+router.get('/summary/export.csv', async (req, res) => {
+  const data = await getSetupSummaryData();
+  const sections = [
+    { title: 'Trades', header: ['Name'], rows: data.trades.map((r) => [r.name]) },
+    { title: 'Skill Levels', header: ['Name'], rows: data.skillLevels.map((r) => [r.name]) },
+    { title: 'Project Types', header: ['Name'], rows: data.projectTypes.map((r) => [r.name]) },
+    { title: 'Projects', header: ['Name', 'Location', 'Type'], rows: data.projects.map((r) => [r.name, r.location, r.project_type_name]) },
+    { title: 'Activities', header: ['Name', 'Unit'], rows: data.activities.map((r) => [r.name, r.unit]) },
+    { title: 'Activity Stages', header: ['Activity', 'Stage', 'Weight %', 'Order'], rows: data.stages.map((r) => [r.activity_name, r.name, r.weight_percent, r.sequence_order]) },
+    { title: 'Workers', header: ['Name', 'Trade', 'Skill Level', 'Project'], rows: data.workers.map((r) => [r.name, r.trade_name, r.skill_level_name, r.project_name]) },
+    { title: 'Users & Logins', header: ['Name', 'Role', 'Active', 'Project'], rows: data.users.map((r) => [r.name, r.role, r.is_active ? 'Yes' : 'No', r.project_name]) },
+    { title: 'Targets', header: ['Activity', 'Stage', 'Project Type', 'Target per Day'], rows: data.targets.map((r) => [r.activity_name, r.stage_name, r.project_type_name || 'General', r.target_per_day]) },
+  ];
+
+  let csv = '';
+  sections.forEach((section) => {
+    csv += section.title + '\n';
+    csv += section.header.map(escapeCsv).join(',') + '\n';
+    section.rows.forEach((row) => {
+      csv += row.map(escapeCsv).join(',') + '\n';
+    });
+    csv += '\n';
+  });
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="aajkaam-setup-summary.csv"');
+  res.send('﻿' + csv);
+});
+
+router.get('/summary/export.pdf', async (req, res) => {
+  const data = await getSetupSummaryData();
+  const sections = [
+    { title: 'Trades', header: 'Name', rows: data.trades.map((r) => [r.name]) },
+    { title: 'Skill Levels', header: 'Name', rows: data.skillLevels.map((r) => [r.name]) },
+    { title: 'Project Types', header: 'Name', rows: data.projectTypes.map((r) => [r.name]) },
+    { title: 'Projects', header: 'Name / Location / Type', rows: data.projects.map((r) => [r.name, r.location || '—', r.project_type_name || '—']) },
+    { title: 'Activities', header: 'Name / Unit', rows: data.activities.map((r) => [r.name, r.unit]) },
+    { title: 'Activity Stages', header: 'Activity / Stage / Weight % / Order', rows: data.stages.map((r) => [r.activity_name, r.name, r.weight_percent, r.sequence_order]) },
+    { title: 'Workers', header: 'Name / Trade / Skill Level / Project', rows: data.workers.map((r) => [r.name, r.trade_name || '—', r.skill_level_name || '—', r.project_name || '—']) },
+    { title: 'Users & Logins', header: 'Name / Role / Active / Project', rows: data.users.map((r) => [r.name, r.role, r.is_active ? 'Yes' : 'No', r.project_name || '—']) },
+    { title: 'Targets', header: 'Activity / Stage / Project Type / Target per Day', rows: data.targets.map((r) => [r.activity_name, r.stage_name, r.project_type_name || 'General', r.target_per_day]) },
+  ];
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename="aajkaam-setup-summary.pdf"');
+
+  const doc = new PDFDocument({ margin: 50 });
+  doc.pipe(res);
+
+  doc.fontSize(18).text('AajKaam — Setup Summary', { underline: true });
+  doc.moveDown(0.5);
+  doc.fontSize(9).fillColor('#666').text(`Generated ${new Date().toLocaleString()}`);
+  doc.moveDown(1);
+
+  sections.forEach((section) => {
+    if (doc.y > 680) doc.addPage();
+    doc.fontSize(13).fillColor('#000').text(section.title);
+    doc.fontSize(9).fillColor('#666').text(section.header);
+    doc.moveDown(0.3);
+    doc.fontSize(10).fillColor('#000');
+    if (!section.rows.length) {
+      doc.text('— none —');
+    } else {
+      section.rows.forEach((row) => {
+        if (doc.y > 730) doc.addPage();
+        doc.text(row.map((v) => (v === null || v === undefined ? '—' : String(v))).join('   |   '));
+      });
+    }
+    doc.moveDown(1);
+  });
+
+  doc.end();
 });
 
 module.exports = router;

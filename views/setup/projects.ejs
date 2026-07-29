@@ -8,21 +8,7 @@
   <%- include('../partials/nav', {current: 'setup'}) %>
   <main>
     <div class="card">
-      <h2>Project Types</h2>
-      <form method="POST" action="/setup/project-types">
-        <label>New Project Type</label>
-        <input type="text" name="name" placeholder="e.g. Villa" required>
-        <button type="submit">Add Project Type</button>
-      </form>
-      <div class="table-wrap">
-      <table>
-        <tr><th>Project Type</th></tr>
-        <% projectTypes.forEach(pt => { %><tr><td><%= pt.name %></td></tr><% }) %>
-      </table>
-      </div>
-    </div>
-    <div class="card">
-      <h2>New Project / Site</h2>
+      <h2>Projects</h2>
       <form method="POST" action="/setup/projects">
         <label>Project Name</label>
         <input type="text" name="name" placeholder="e.g. Marina Towers - Block A" required>
@@ -34,6 +20,16 @@
           <% projectTypes.forEach(pt => { %><option value="<%= pt.id %>"><%= pt.name %></option><% }) %>
         </select>
         <button type="submit">Add Project</button>
+      </form>
+
+      <h3 style="margin-top:28px;">Project Types</h3>
+      <p style="color:var(--steel);font-size:13px;margin-top:-6px;">Optional grouping used in the Project Type dropdown above (e.g. "Villa", "Tower").<% if (projectTypes.length) { %> Existing: <%= projectTypes.map(pt => pt.name).join(', ') %>.<% } %></p>
+      <form method="POST" action="/setup/project-types" style="display:flex;gap:10px;align-items:flex-end;">
+        <div style="flex:1;">
+          <label>New Project Type</label>
+          <input type="text" name="name" placeholder="e.g. Villa" required>
+        </div>
+        <button type="submit" style="width:auto;padding:0 20px;min-height:50px;margin:0;">Add</button>
       </form>
     </div>
     <div class="card">
