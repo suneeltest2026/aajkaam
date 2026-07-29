@@ -13,46 +13,40 @@
     <div class="card">
       <h2>Logins</h2>
       <p style="color:var(--steel);">Each person gets their own name and PIN. A worker's login is separate from their profile in Setup &rarr; Workers — add the profile first, then a login here if they need app access.</p>
-      <div class="table-wrap">
-        <table>
-          <tr><th>Name</th><th>Role</th><th>Status</th><th>Project</th><th></th></tr>
-          <% users.forEach(u => { %>
-            <tr>
-              <td><%= u.name %></td>
-              <td style="text-transform:capitalize;"><%= u.role %></td>
-              <td><%= u.is_active ? 'Active' : 'Deactivated' %></td>
-              <td>
-                <% if (u.role === 'supervisor') { %>
-                  <form method="POST" action="/setup/users/<%= u.id %>/link-project" style="display:flex;gap:6px;align-items:center;margin:0;">
-                    <select name="project_id" style="min-height:36px;width:auto;">
-                      <option value="">-- No project --</option>
-                      <% projects.forEach(p => { %>
-                        <option value="<%= p.id %>" <%= u.project_id === p.id ? 'selected' : '' %>><%= p.name %></option>
-                      <% }) %>
-                    </select>
-                    <button type="submit" style="width:auto;min-height:36px;margin:0;padding:0 12px;font-size:12.5px;">Link</button>
-                  </form>
-                <% } else { %>
-                  <span style="color:var(--steel);">—</span>
-                <% } %>
-              </td>
-              <td>
-                <div style="display:flex;gap:8px;">
-                  <form method="POST" action="/setup/users/<%= u.id %>/reset-pin" style="display:flex;gap:6px;align-items:center;margin:0;">
-                    <input type="password" name="pin" placeholder="New PIN" inputmode="numeric" minlength="4" maxlength="6" required style="min-height:36px;width:110px;">
-                    <input type="password" name="confirm_pin" placeholder="Confirm" inputmode="numeric" minlength="4" maxlength="6" required style="min-height:36px;width:110px;">
-                    <button type="submit" style="width:auto;min-height:36px;margin:0;padding:0 12px;font-size:12.5px;">Reset PIN</button>
-                  </form>
-                  <form method="POST" action="/setup/users/<%= u.id %>/toggle-active" style="margin:0;">
-                    <button type="submit" style="width:auto;min-height:36px;margin:0;padding:0 12px;font-size:12.5px;background:var(--app-bg);color:var(--ink);"><%= u.is_active ? 'Deactivate' : 'Reactivate' %></button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          <% }) %>
-          <% if (!users.length) { %><tr><td colspan="5" style="color:var(--steel);">No logins yet.</td></tr><% } %>
-        </table>
-      </div>
+      <% users.forEach(u => { %>
+        <div class="list-row">
+          <div class="list-row-head">
+            <span class="list-row-name"><%= u.name %></span>
+            <span class="pill pill--neutral" style="text-transform:capitalize;"><%= u.role %></span>
+            <span class="status" style="<%= u.is_active ? 'background:var(--good-bg);color:var(--good);' : 'background:var(--app-bg);color:var(--steel);' %>"><%= u.is_active ? 'Active' : 'Deactivated' %></span>
+          </div>
+          <% if (u.role === 'supervisor') { %>
+            <div class="list-row-meta"><span>Project: <%= u.project_name || 'Not tagged' %></span></div>
+          <% } %>
+          <div class="list-row-actions">
+            <% if (u.role === 'supervisor') { %>
+              <form method="POST" action="/setup/users/<%= u.id %>/link-project">
+                <select name="project_id">
+                  <option value="">-- No project --</option>
+                  <% projects.forEach(p => { %>
+                    <option value="<%= p.id %>" <%= u.project_id === p.id ? 'selected' : '' %>><%= p.name %></option>
+                  <% }) %>
+                </select>
+                <button type="submit">Link</button>
+              </form>
+            <% } %>
+            <form method="POST" action="/setup/users/<%= u.id %>/reset-pin">
+              <input type="password" name="pin" placeholder="New PIN" inputmode="numeric" minlength="4" maxlength="6" required>
+              <input type="password" name="confirm_pin" placeholder="Confirm" inputmode="numeric" minlength="4" maxlength="6" required>
+              <button type="submit">Reset PIN</button>
+            </form>
+            <form method="POST" action="/setup/users/<%= u.id %>/toggle-active">
+              <button type="submit" style="background:var(--app-bg);color:var(--ink);"><%= u.is_active ? 'Deactivate' : 'Reactivate' %></button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+      <% if (!users.length) { %><p style="color:var(--steel);">No logins yet.</p><% } %>
     </div>
 
     <div class="card">
