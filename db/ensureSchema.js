@@ -36,6 +36,10 @@ async function ensureSchema() {
         details VARCHAR(255),
         created_at TIMESTAMP DEFAULT NOW()
     );
+
+    ALTER TABLE projects ADD COLUMN IF NOT EXISTS location VARCHAR(255);
+    ALTER TABLE workers ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id);
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id);
   `);
 }
 

@@ -11,8 +11,10 @@ router.use(requireRole('worker'));
 router.get('/', async (req, res) => {
   const id = req.user.worker_id;
   const workerRes = await pool.query(`
-    SELECT w.*, t.name AS trade_name
-    FROM workers w LEFT JOIN trades t ON t.id = w.trade_id
+    SELECT w.*, t.name AS trade_name, p.name AS tagged_project_name, p.location AS tagged_project_location
+    FROM workers w
+    LEFT JOIN trades t ON t.id = w.trade_id
+    LEFT JOIN projects p ON p.id = w.project_id
     WHERE w.id = $1
   `, [id]);
   if (workerRes.rows.length === 0) return res.redirect('/login');

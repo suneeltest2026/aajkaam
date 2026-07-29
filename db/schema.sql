@@ -24,6 +24,7 @@ CREATE TABLE project_types (
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
+    location VARCHAR(255),
     project_type_id INTEGER REFERENCES project_types(id),
     is_active BOOLEAN DEFAULT TRUE
 );
@@ -50,6 +51,7 @@ CREATE TABLE workers (
     name VARCHAR(150) NOT NULL,
     trade_id INTEGER REFERENCES trades(id),
     skill_level_id INTEGER REFERENCES skill_levels(id),
+    project_id INTEGER REFERENCES projects(id), -- direct project tag, shown on their dashboard
     is_active BOOLEAN DEFAULT TRUE
 );
 
@@ -93,6 +95,7 @@ CREATE TABLE users (
     name VARCHAR(150) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('worker','supervisor','management','admin')),
     worker_id INTEGER REFERENCES workers(id), -- set only when role = 'worker'
+    project_id INTEGER REFERENCES projects(id), -- direct project tag for a supervisor login
     pin_hash VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT NOW()

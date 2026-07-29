@@ -11,6 +11,12 @@
   <main>
     <div class="card">
       <h2>Today's Work</h2>
+      <% if (taggedProject) { %>
+        <span class="pill pill--neutral" style="margin-bottom:14px;">
+          <svg class="ic-sm" width="12" height="12"><use href="#i-building"></use></svg>
+          <%= taggedProject.name %><% if (taggedProject.location) { %> &middot; <%= taggedProject.location %><% } %>
+        </span>
+      <% } %>
       <% if (typeof saved !== 'undefined') { %>
         <p class="pill pill--good" style="margin-bottom:10px;"><svg class="ic-sm" width="12" height="12"><use href="#i-check"></use></svg>Saved successfully</p>
       <% } %>

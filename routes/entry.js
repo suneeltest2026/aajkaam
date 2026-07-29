@@ -28,8 +28,17 @@ router.get('/', async (req, res) => {
          ORDER BY c.name`,
     allowed ? [allowed] : []
   );
+
+  // The supervisor's own direct project tag (Setup -> Users), separate
+  // from whichever project each individual crew below belongs to.
+  const tagged = await pool.query(
+    `SELECT p.name, p.location FROM users u LEFT JOIN projects p ON p.id = u.project_id WHERE u.id = $1`,
+    [req.user.id]
+  );
+
   res.render('entry/form', {
     crews: crews.rows,
+    taggedProject: tagged.rows[0] && tagged.rows[0].name ? tagged.rows[0] : null,
     today: new Date().toISOString().slice(0, 10),
     saved: req.query.saved,
     error: req.query.error,
