@@ -42,8 +42,9 @@ that many people can read/write to at once, safely.
 1. Back in VS Code's terminal, type `npm start` and press Enter.
 2. Open your browser and go to `http://localhost:3000`
 3. You should see the AajKaam Daily Entry screen. Go to "Setup" first and
-   add at least one Trade, one Activity with Stages, one Crew, and one Target
-   before trying Daily Entry — otherwise the dropdowns will be empty.
+   add at least one Trade, Project, Activity with Stages, and Target, then
+   tag a Worker and a Supervisor to the same project — otherwise the
+   dropdowns in Daily Entry will be empty.
 
 ## Part E — Put the code on GitHub
 
@@ -73,10 +74,12 @@ that many people can read/write to at once, safely.
    (something like `aajkaam.onrender.com`) that anyone can open on their phone.
 
 ## What's built in Phase 1
-- Setup screens: Trades, Activities & Stages (with weights), Crews & Members
-  (with incentive shares), Targets (with project-type or general/default)
-- Supervisor Daily Entry screen: pick crew, see its stages automatically,
-  enter units completed + hours per stage
+- Setup screens: Trades, Projects, Activities & Stages (with weights),
+  Targets (with project-type or general/default), Workers and Supervisors
+  each tagged directly to a project — that tag is what lets a supervisor
+  log work for a worker
+- Supervisor Daily Entry screen: pick a worker (limited to their tagged
+  project), pick an activity, enter units completed + hours per stage
 
 ## Not built yet (later phases)
 - Worker login/performance view
