@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajKaam — Setup Summary</title><link rel="stylesheet" href="/style.css"></head>
+<body class="role-supervisor">
+  <%- include('../partials/nav', {current: 'setup'}) %>
+  <main>
+    <div class="card">
+      <h2 style="margin-bottom:4px;">Setup Summary</h2>
+      <p style="color:var(--steel);font-size:13px;margin:0 0 16px;">Everything entered across Setup, in one place — download a copy any time.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="/setup/summary/export.csv"><button type="button" style="width:auto;padding:0 20px;">Download as Excel (CSV)</button></a>
+        <a href="/setup/summary/export.pdf"><button type="button" style="width:auto;padding:0 20px;">Download as PDF</button></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Trades</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th></tr>
+          <% trades.forEach(r => { %><tr><td><%= r.name %></td></tr><% }) %>
+          <% if (!trades.length) { %><tr><td style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Skill Levels</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th></tr>
+          <% skillLevels.forEach(r => { %><tr><td><%= r.name %></td></tr><% }) %>
+          <% if (!skillLevels.length) { %><tr><td style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Project Types</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th></tr>
+          <% projectTypes.forEach(r => { %><tr><td><%= r.name %></td></tr><% }) %>
+          <% if (!projectTypes.length) { %><tr><td style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Projects</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th><th>Location</th><th>Type</th></tr>
+          <% projects.forEach(r => { %><tr><td><%= r.name %></td><td><%= r.location || '—' %></td><td><%= r.project_type_name || '—' %></td></tr><% }) %>
+          <% if (!projects.length) { %><tr><td colspan="3" style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Activities</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th><th>Unit</th></tr>
+          <% activities.forEach(r => { %><tr><td><%= r.name %></td><td><%= r.unit %></td></tr><% }) %>
+          <% if (!activities.length) { %><tr><td colspan="2" style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Activity Stages</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Activity</th><th>Stage</th><th>Weight %</th><th>Order</th></tr>
+          <% stages.forEach(r => { %><tr><td><%= r.activity_name %></td><td><%= r.name %></td><td><%= r.weight_percent %></td><td><%= r.sequence_order %></td></tr><% }) %>
+          <% if (!stages.length) { %><tr><td colspan="4" style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Workers</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th><th>Trade</th><th>Skill Level</th><th>Project</th></tr>
+          <% workers.forEach(r => { %><tr><td><%= r.name %></td><td><%= r.trade_name || '—' %></td><td><%= r.skill_level_name || '—' %></td><td><%= r.project_name || '—' %></td></tr><% }) %>
+          <% if (!workers.length) { %><tr><td colspan="4" style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Users &amp; Logins</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th><th>Role</th><th>Active</th><th>Project</th></tr>
+          <% users.forEach(r => { %><tr><td><%= r.name %></td><td><%= r.role %></td><td><%= r.is_active ? 'Yes' : 'No' %></td><td><%= r.project_name || '—' %></td></tr><% }) %>
+          <% if (!users.length) { %><tr><td colspan="4" style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Targets</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Activity</th><th>Stage</th><th>Project Type</th><th>Target / Day</th></tr>
+          <% targets.forEach(r => { %><tr><td><%= r.activity_name %></td><td><%= r.stage_name %></td><td><%= r.project_type_name || 'General' %></td><td><%= r.target_per_day %></td></tr><% }) %>
+          <% if (!targets.length) { %><tr><td colspan="4" style="color:var(--steel);">None yet</td></tr><% } %>
+        </table>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
