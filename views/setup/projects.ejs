@@ -26,6 +26,8 @@
       <form method="POST" action="/setup/projects">
         <label>Project Name</label>
         <input type="text" name="name" placeholder="e.g. Marina Towers - Block A" required>
+        <label>Location</label>
+        <input type="text" name="location" placeholder="e.g. Whitefield, Bengaluru">
         <label>Project Type</label>
         <select name="project_type_id">
           <option value="">-- None --</option>
@@ -38,9 +40,9 @@
       <h3>Active Projects</h3>
       <div class="table-wrap">
       <table>
-        <tr><th>Project</th><th>Type</th></tr>
+        <tr><th>Project</th><th>Location</th><th>Type</th></tr>
         <% projects.forEach(p => { %>
-          <tr><td><%= p.name %></td><td><%= p.project_type_name || '—' %></td></tr>
+          <tr><td><%= p.name %></td><td><%= p.location || '—' %></td><td><%= p.project_type_name || '—' %></td></tr>
         <% }) %>
       </table>
       </div>

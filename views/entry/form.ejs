@@ -11,29 +11,43 @@
   <main>
     <div class="card">
       <h2>Today's Work</h2>
+      <% if (taggedProject) { %>
+        <span class="pill pill--neutral" style="margin-bottom:14px;">
+          <svg class="ic-sm" width="12" height="12"><use href="#i-building"></use></svg>
+          <%= taggedProject.name %><% if (taggedProject.location) { %> &middot; <%= taggedProject.location %><% } %>
+        </span>
+      <% } %>
       <% if (typeof saved !== 'undefined') { %>
         <p class="pill pill--good" style="margin-bottom:10px;"><svg class="ic-sm" width="12" height="12"><use href="#i-check"></use></svg>Saved successfully</p>
       <% } %>
-      <% if (error === 'crew') { %>
-        <p class="auth-error">That crew isn't assigned to you — ask Management to add you in Setup &rarr; Crews.</p>
+      <% if (error === 'worker') { %>
+        <p class="auth-error">That worker isn't tagged to your project — ask Management to link them in Setup &rarr; Workers.</p>
       <% } %>
-      <% if (!crews.length) { %>
-        <p style="color:var(--steel);">No crews are assigned to you yet — ask Management to add you to a crew in Setup &rarr; Crews.</p>
+      <% if (!workers.length) { %>
+        <p style="color:var(--steel);">No workers are tagged to your project yet — ask Management to link one to you in Setup &rarr; Workers.</p>
       <% } else { %>
       <form method="POST" action="/entry">
         <label>Date</label>
         <input type="date" name="entry_date" value="<%= today %>" required>
 
-        <label>Crew</label>
-        <select name="crew_id" id="crewSelect" required>
-          <option value="">-- Select Crew --</option>
-          <% crews.forEach(c => { %>
-            <option value="<%= c.id %>"><%= c.name %> (<%= c.activity_name %>) — <%= c.project_name || 'No project set' %></option>
+        <label>Worker</label>
+        <select name="worker_id" id="workerSelect" required>
+          <option value="">-- Select Worker --</option>
+          <% workers.forEach(w => { %>
+            <option value="<%= w.id %>"><%= w.name %><% if (w.trade_name) { %> (<%= w.trade_name %>)<% } %></option>
           <% }) %>
         </select>
 
         <label>Project / Site</label>
-        <input type="text" id="projectField" value="" readonly placeholder="Pick a crew above">
+        <input type="text" id="projectField" value="" readonly placeholder="Pick a worker above">
+
+        <label>Activity</label>
+        <select name="activity_id" id="activitySelect" required>
+          <option value="">-- Select Activity --</option>
+          <% activities.forEach(a => { %>
+            <option value="<%= a.id %>"><%= a.name %></option>
+          <% }) %>
+        </select>
 
         <label>Entered By</label>
         <input type="text" value="<%= enteredByName %>" readonly>
@@ -47,8 +61,9 @@
   </main>
 
   <script>
-    const crewSelect = document.getElementById('crewSelect');
+    const workerSelect = document.getElementById('workerSelect');
     const projectField = document.getElementById('projectField');
+    const activitySelect = document.getElementById('activitySelect');
     const container = document.getElementById('stagesContainer');
 
     function step(input, delta) {
@@ -56,14 +71,21 @@
       input.value = Math.max(0, Math.round(val * 100) / 100);
     }
 
-    crewSelect.addEventListener('change', async () => {
-      container.innerHTML = '';
+    workerSelect.addEventListener('change', async () => {
       projectField.value = '';
-      const crewId = crewSelect.value;
-      if (!crewId) return;
-      const res = await fetch('/entry/stages/' + crewId);
-      const { project, stages } = await res.json();
-      projectField.value = project ? project.name : '';
+      const workerId = workerSelect.value;
+      if (!workerId) return;
+      const res = await fetch('/entry/worker-project/' + workerId);
+      const { project } = await res.json();
+      projectField.value = project ? project.name + (project.location ? ' · ' + project.location : '') : 'No project set';
+    });
+
+    activitySelect.addEventListener('change', async () => {
+      container.innerHTML = '';
+      const activityId = activitySelect.value;
+      if (!activityId) return;
+      const res = await fetch('/entry/stages/' + activityId);
+      const stages = await res.json();
       stages.forEach((stage, i) => {
         const row = document.createElement('div');
         row.className = 'card stage-card';

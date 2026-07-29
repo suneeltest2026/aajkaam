@@ -27,14 +27,19 @@ router.get('/', (req, res) => {
 // setup page. This list, and every action below, only ever touches
 // non-admin accounts.
 router.get('/users', async (req, res) => {
-  const users = await pool.query(`SELECT id, name, role, worker_id, is_active FROM users WHERE role != 'admin' ORDER BY role, name`);
+  const users = await pool.query(`
+    SELECT u.id, u.name, u.role, u.worker_id, u.is_active, u.project_id, p.name AS project_name
+    FROM users u LEFT JOIN projects p ON p.id = u.project_id
+    WHERE u.role != 'admin' ORDER BY u.role, u.name
+  `);
   const availableWorkers = await pool.query(`
     SELECT w.id, w.name FROM workers w
     LEFT JOIN users u ON u.worker_id = w.id
     WHERE u.id IS NULL AND w.is_active = TRUE
     ORDER BY w.name
   `);
-  res.render('setup/users', { users: users.rows, availableWorkers: availableWorkers.rows, error: req.query.error });
+  const projects = await pool.query('SELECT * FROM projects WHERE is_active = TRUE ORDER BY name');
+  res.render('setup/users', { users: users.rows, availableWorkers: availableWorkers.rows, projects: projects.rows, error: req.query.error });
 });
 
 // Who performed the action, for the activity log — null during the one-time
@@ -102,6 +107,25 @@ router.post('/users/:id/toggle-active', async (req, res) => {
   res.redirect('/setup/users');
 });
 
+// Tags a supervisor login directly to a project — this is the real access
+// control: a supervisor can log entries for any worker tagged to the same
+// project (see allowedWorkerIds in routes/entry.js), and it's shown on
+// their Daily Entry screen.
+router.post('/users/:id/link-project', async (req, res) => {
+  const { project_id } = req.body;
+  const target = await pool.query('SELECT name, role FROM users WHERE id = $1', [req.params.id]);
+  if (!target.rows.length || target.rows[0].role !== 'supervisor') return res.redirect('/setup/users');
+  const project = project_id ? await pool.query('SELECT name FROM projects WHERE id = $1', [project_id]) : { rows: [] };
+  await pool.query('UPDATE users SET project_id = $1 WHERE id = $2', [project_id || null, req.params.id]);
+  await logActivity({
+    ...actor(req), action: 'supervisor_linked_to_project',
+    details: project_id
+      ? `${target.rows[0].name} → ${project.rows[0] ? project.rows[0].name : 'project #' + project_id}`
+      : `${target.rows[0].name} unlinked from project`,
+  });
+  res.redirect('/setup/users');
+});
+
 // --- TRADES ---
 router.get('/trades', async (req, res) => {
   const result = await pool.query('SELECT * FROM trades ORDER BY name');
@@ -124,15 +148,17 @@ router.post('/skill-levels', async (req, res) => {
 // --- WORKERS ---
 router.get('/workers', async (req, res) => {
   const workers = await pool.query(`
-    SELECT w.*, t.name AS trade_name, sl.name AS skill_level_name
+    SELECT w.*, t.name AS trade_name, sl.name AS skill_level_name, p.name AS project_name
     FROM workers w
     LEFT JOIN trades t ON t.id = w.trade_id
     LEFT JOIN skill_levels sl ON sl.id = w.skill_level_id
+    LEFT JOIN projects p ON p.id = w.project_id
     WHERE w.is_active = TRUE ORDER BY w.name
   `);
   const trades = await pool.query('SELECT * FROM trades ORDER BY name');
   const skillLevels = await pool.query('SELECT * FROM skill_levels ORDER BY name');
-  res.render('setup/workers', { workers: workers.rows, trades: trades.rows, skillLevels: skillLevels.rows });
+  const projects = await pool.query('SELECT * FROM projects WHERE is_active = TRUE ORDER BY name');
+  res.render('setup/workers', { workers: workers.rows, trades: trades.rows, skillLevels: skillLevels.rows, projects: projects.rows });
 });
 
 router.post('/workers', async (req, res) => {
@@ -141,6 +167,27 @@ router.post('/workers', async (req, res) => {
     'INSERT INTO workers (name, trade_id, skill_level_id) VALUES ($1,$2,$3)',
     [name, trade_id || null, skill_level_id || null]
   );
+  res.redirect('/setup/workers');
+});
+
+// Tags a worker directly to a project — this is the real access control:
+// only a supervisor tagged to the same project can log entries for this
+// worker, and it's shown on the worker's own dashboard.
+router.post('/workers/:id/link-project', async (req, res) => {
+  const { project_id } = req.body;
+  const [worker, project] = await Promise.all([
+    pool.query('SELECT name FROM workers WHERE id = $1', [req.params.id]),
+    project_id ? pool.query('SELECT name FROM projects WHERE id = $1', [project_id]) : Promise.resolve({ rows: [] }),
+  ]);
+  await pool.query('UPDATE workers SET project_id = $1 WHERE id = $2', [project_id || null, req.params.id]);
+  if (worker.rows.length) {
+    await logActivity({
+      ...actor(req), action: 'worker_linked_to_project',
+      details: project_id
+        ? `${worker.rows[0].name} → ${project.rows[0] ? project.rows[0].name : 'project #' + project_id}`
+        : `${worker.rows[0].name} unlinked from project`,
+    });
+  }
   res.redirect('/setup/workers');
 });
 
@@ -163,10 +210,10 @@ router.get('/projects', async (req, res) => {
 });
 
 router.post('/projects', async (req, res) => {
-  const { name, project_type_id } = req.body;
+  const { name, location, project_type_id } = req.body;
   await pool.query(
-    'INSERT INTO projects (name, project_type_id) VALUES ($1,$2)',
-    [name, project_type_id || null]
+    'INSERT INTO projects (name, location, project_type_id) VALUES ($1,$2,$3)',
+    [name, location || null, project_type_id || null]
   );
   res.redirect('/setup/projects');
 });
@@ -197,96 +244,6 @@ router.post('/activities/:id/stages', async (req, res) => {
     [id, stage_name, weight_percent, sequence_order]
   );
   res.redirect('/setup/activities');
-});
-
-// --- CREWS ---
-router.get('/crews', async (req, res) => {
-  const crews = await pool.query(`
-    SELECT c.*, a.name AS activity_name, p.name AS project_name
-    FROM crews c
-    LEFT JOIN activities a ON a.id = c.activity_id
-    LEFT JOIN projects p ON p.id = c.project_id
-    ORDER BY c.name
-  `);
-  const workers = await pool.query('SELECT * FROM workers WHERE is_active = TRUE ORDER BY name');
-  const activities = await pool.query('SELECT * FROM activities ORDER BY name');
-  const projects = await pool.query('SELECT * FROM projects WHERE is_active = TRUE ORDER BY name');
-  const members = await pool.query(`
-    SELECT cm.*, w.name AS worker_name, c.name AS crew_name
-    FROM crew_members cm
-    JOIN workers w ON w.id = cm.worker_id
-    JOIN crews c ON c.id = cm.crew_id
-  `);
-  const supervisors = await pool.query(`SELECT id, name FROM users WHERE role = 'supervisor' AND is_active = TRUE ORDER BY name`);
-  const crewSupervisors = await pool.query(`
-    SELECT cs.id, cs.crew_id, u.id AS user_id, u.name AS supervisor_name
-    FROM crew_supervisors cs JOIN users u ON u.id = cs.user_id
-  `);
-  res.render('setup/crews', {
-    crews: crews.rows, workers: workers.rows, activities: activities.rows, projects: projects.rows,
-    members: members.rows, supervisors: supervisors.rows, crewSupervisors: crewSupervisors.rows,
-    error: req.query.error,
-  });
-});
-
-router.post('/crews', async (req, res) => {
-  const { name, activity_id, project_id } = req.body;
-  if (!project_id) return res.redirect('/setup/crews?error=project');
-  await pool.query('INSERT INTO crews (name, activity_id, project_id) VALUES ($1,$2,$3)', [name, activity_id, project_id]);
-  const project = await pool.query('SELECT name FROM projects WHERE id = $1', [project_id]);
-  await logActivity({ ...actor(req), action: 'crew_created', details: `'${name}' on ${project.rows[0] ? project.rows[0].name : 'project #' + project_id}` });
-  res.redirect('/setup/crews');
-});
-
-// A crew works one project at a time, but management can move it — e.g.
-// when a job wraps up and the crew starts the next site.
-router.post('/crews/:id/transfer', async (req, res) => {
-  const { project_id } = req.body;
-  const [crew, project] = await Promise.all([
-    pool.query('SELECT name FROM crews WHERE id = $1', [req.params.id]),
-    pool.query('SELECT name FROM projects WHERE id = $1', [project_id]),
-  ]);
-  await pool.query('UPDATE crews SET project_id = $1 WHERE id = $2', [project_id, req.params.id]);
-  if (crew.rows.length) {
-    await logActivity({ ...actor(req), action: 'crew_transferred', details: `'${crew.rows[0].name}' to ${project.rows[0] ? project.rows[0].name : 'project #' + project_id}` });
-  }
-  res.redirect('/setup/crews');
-});
-
-router.post('/crews/:id/supervisors', async (req, res) => {
-  const { id } = req.params;
-  const { user_id } = req.body;
-  await pool.query(
-    'INSERT INTO crew_supervisors (crew_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-    [id, user_id]
-  );
-  const [crew, supervisor] = await Promise.all([
-    pool.query('SELECT name FROM crews WHERE id = $1', [id]),
-    pool.query('SELECT name FROM users WHERE id = $1', [user_id]),
-  ]);
-  await logActivity({ ...actor(req), action: 'supervisor_assigned', details: `${supervisor.rows[0] ? supervisor.rows[0].name : 'user #' + user_id} to '${crew.rows[0] ? crew.rows[0].name : 'crew #' + id}'` });
-  res.redirect('/setup/crews');
-});
-
-router.post('/crews/:crewId/supervisors/:userId/remove', async (req, res) => {
-  const { crewId, userId } = req.params;
-  await pool.query('DELETE FROM crew_supervisors WHERE crew_id = $1 AND user_id = $2', [crewId, userId]);
-  const [crew, supervisor] = await Promise.all([
-    pool.query('SELECT name FROM crews WHERE id = $1', [crewId]),
-    pool.query('SELECT name FROM users WHERE id = $1', [userId]),
-  ]);
-  await logActivity({ ...actor(req), action: 'supervisor_removed', details: `${supervisor.rows[0] ? supervisor.rows[0].name : 'user #' + userId} from '${crew.rows[0] ? crew.rows[0].name : 'crew #' + crewId}'` });
-  res.redirect('/setup/crews');
-});
-
-router.post('/crews/:id/members', async (req, res) => {
-  const { id } = req.params;
-  const { worker_id, incentive_share_percent } = req.body;
-  await pool.query(
-    'INSERT INTO crew_members (crew_id, worker_id, incentive_share_percent) VALUES ($1,$2,$3)',
-    [id, worker_id, incentive_share_percent]
-  );
-  res.redirect('/setup/crews');
 });
 
 // --- TARGETS ---

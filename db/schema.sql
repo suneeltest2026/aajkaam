@@ -24,6 +24,7 @@ CREATE TABLE project_types (
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
+    location VARCHAR(255),
     project_type_id INTEGER REFERENCES project_types(id),
     is_active BOOLEAN DEFAULT TRUE
 );
@@ -44,36 +45,20 @@ CREATE TABLE activity_stages (
     sequence_order INTEGER NOT NULL       -- 1, 2, 3 = order stages happen in
 );
 
--- 7. WORKERS
+-- 7. WORKERS: tagged directly to one project — that tag is what lets a
+--    supervisor on the same project log work for them (Setup -> Workers).
 CREATE TABLE workers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
     trade_id INTEGER REFERENCES trades(id),
     skill_level_id INTEGER REFERENCES skill_levels(id),
+    project_id INTEGER REFERENCES projects(id),
     is_active BOOLEAN DEFAULT TRUE
 );
 
--- 8. CREWS: a saved team template (e.g. "Blockwork Crew A"), currently
---    working one project at a time. Management can transfer a crew to a
---    different project; a crew is never on two projects at once.
-CREATE TABLE crews (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
-    activity_id INTEGER REFERENCES activities(id),
-    project_id INTEGER REFERENCES projects(id)
-);
-
--- 9. CREW MEMBERS: who's on each crew, and their incentive share
-CREATE TABLE crew_members (
-    id SERIAL PRIMARY KEY,
-    crew_id INTEGER REFERENCES crews(id),
-    worker_id INTEGER REFERENCES workers(id),
-    incentive_share_percent NUMERIC(5,2) NOT NULL -- e.g. 60.00 for skilled, 40.00 for helper
-);
-
--- 10. TARGETS: expected output per crew type + project type + stage
---     If no exact match exists for a job, the app falls back to:
---     (a) historical average for that combination, or (b) a general default.
+-- 8. TARGETS: expected output per activity stage + project type per day.
+--    If no exact match exists for a job, the app falls back to the
+--    stage's general/default target.
 CREATE TABLE targets (
     id SERIAL PRIMARY KEY,
     activity_id INTEGER REFERENCES activities(id),
@@ -83,36 +68,32 @@ CREATE TABLE targets (
     is_general_default BOOLEAN DEFAULT FALSE
 );
 
--- 11. USERS: login accounts. A worker's login links to their `workers` row
---     (worker_id); supervisor/management/admin accounts are login-only, no
---     separate profile table. PIN is stored hashed, never in plain text.
---     'admin' is a tier above management: same access, plus the activity
---     log (activity_log below), including management's own actions.
+-- 9. USERS: login accounts. A worker's login links to their `workers` row
+--    (worker_id); supervisor/management/admin accounts are login-only, no
+--    separate profile table. PIN is stored hashed, never in plain text.
+--    A supervisor is tagged to one project (Setup -> Users) — that tag is
+--    what lets them log work for any worker tagged to the same project.
+--    'admin' is a tier above management: same access, plus the activity
+--    log (activity_log below), including management's own actions.
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('worker','supervisor','management','admin')),
     worker_id INTEGER REFERENCES workers(id), -- set only when role = 'worker'
+    project_id INTEGER REFERENCES projects(id), -- set only when role = 'supervisor'
     pin_hash VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 12. CREW SUPERVISORS: which supervisor logins may log work for which
---     crew. Management is exempt from this — they can log for any crew.
-CREATE TABLE crew_supervisors (
-    id SERIAL PRIMARY KEY,
-    crew_id INTEGER REFERENCES crews(id),
-    user_id INTEGER REFERENCES users(id),
-    UNIQUE (crew_id, user_id)
-);
-
--- 13. DAILY ENTRIES: what the supervisor records each day
+-- 10. DAILY ENTRIES: what the supervisor records each day, per worker.
+--     project_id is always the worker's own tagged project at the time of
+--     entry — never picked independently on the form.
 CREATE TABLE daily_entries (
     id SERIAL PRIMARY KEY,
     entry_date DATE NOT NULL,
     project_id INTEGER REFERENCES projects(id),
-    crew_id INTEGER REFERENCES crews(id),
+    worker_id INTEGER REFERENCES workers(id),
     activity_stage_id INTEGER REFERENCES activity_stages(id),
     units_completed NUMERIC(10,2) NOT NULL,
     hours_worked NUMERIC(5,2),
@@ -121,7 +102,7 @@ CREATE TABLE daily_entries (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 14. RECOGNITION: HR flags/acknowledgements for workers (no pay processing)
+-- 11. RECOGNITION: HR flags/acknowledgements for workers (no pay processing)
 CREATE TABLE recognitions (
     id SERIAL PRIMARY KEY,
     worker_id INTEGER REFERENCES workers(id),
@@ -130,7 +111,7 @@ CREATE TABLE recognitions (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 15. ACTIVITY LOG: an audit trail for the admin role. Never store a PIN
+-- 12. ACTIVITY LOG: an audit trail for the admin role. Never store a PIN
 --     value here, only that a login attempt happened and whether it
 --     succeeded — user_name/role are cached so the log stays readable
 --     even if the account is later renamed or deactivated.

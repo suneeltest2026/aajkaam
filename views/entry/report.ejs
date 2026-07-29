@@ -25,14 +25,14 @@
       <div class="table-wrap">
       <table>
         <tr>
-          <th>Date</th><th>Project</th><th>Crew</th><th>Activity</th>
+          <th>Date</th><th>Project</th><th>Worker</th><th>Activity</th>
           <th>Stage</th><th>Units</th><th>Hours</th><th>Entered By</th>
         </tr>
         <% entries.forEach(e => { %>
           <tr>
             <td><%= e.entry_date.toISOString().slice(0,10) %></td>
             <td><%= e.project_name || '—' %></td>
-            <td><%= e.crew_name || '—' %></td>
+            <td><%= e.worker_name || '—' %></td>
             <td><%= e.activity_name || '—' %></td>
             <td><%= e.stage_name || '—' %></td>
             <td><%= e.units_completed %></td>

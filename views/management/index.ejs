@@ -14,17 +14,17 @@
         <p class="tile-delta" style="color:var(--steel);"><%= activeWorkers %> active workers</p>
       </div>
       <div class="tile">
-        <p class="tile-label">Crews on target today</p>
-        <% if (crewsOnTargetPct === null) { %>
+        <p class="tile-label">Projects on target today</p>
+        <% if (projectsOnTargetPct === null) { %>
           <p class="tile-num" style="color:var(--steel);font-size:16px;">No entries yet</p>
         <% } else { %>
-          <p class="tile-num"><%= crewsOnTargetPct %><span class="tile-unit">%</span></p>
-          <% if (crewsOnTargetDelta === null) { %>
+          <p class="tile-num"><%= projectsOnTargetPct %><span class="tile-unit">%</span></p>
+          <% if (projectsOnTargetDelta === null) { %>
             <p class="tile-delta" style="color:var(--steel);">No entries yesterday to compare</p>
-          <% } else if (crewsOnTargetDelta >= 0) { %>
-            <p class="tile-delta tile-delta--good"><svg class="ic-sm" width="11" height="11"><use href="#i-up"></use></svg>+<%= crewsOnTargetDelta %>pts vs yesterday</p>
+          <% } else if (projectsOnTargetDelta >= 0) { %>
+            <p class="tile-delta tile-delta--good"><svg class="ic-sm" width="11" height="11"><use href="#i-up"></use></svg>+<%= projectsOnTargetDelta %>pts vs yesterday</p>
           <% } else { %>
-            <p class="tile-delta tile-delta--warn"><svg class="ic-sm" width="11" height="11"><use href="#i-down"></use></svg><%= crewsOnTargetDelta %>pts vs yesterday</p>
+            <p class="tile-delta tile-delta--warn"><svg class="ic-sm" width="11" height="11"><use href="#i-down"></use></svg><%= projectsOnTargetDelta %>pts vs yesterday</p>
           <% } %>
         <% } %>
       </div>
@@ -57,34 +57,34 @@
 
     <div class="card">
       <h2 style="margin-bottom:4px;">Projects &amp; team assignment</h2>
-      <p style="color:var(--steel);font-size:13px;margin:0 0 16px;">Who can see and log data for what &mdash; assigned in Setup &rarr; Crews.</p>
+      <p style="color:var(--steel);font-size:13px;margin:0 0 16px;">Who can see and log data for what &mdash; tagged directly in Setup &rarr; Workers and Setup &rarr; Users. Any supervisor on a project can log for any worker on that same project.</p>
       <% projectTeams.forEach((p, i) => { %>
         <div style="padding:16px 0; <%= i > 0 ? 'border-top:1px solid var(--line);' : '' %>">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
             <p style="font-size:16px;font-weight:700;margin:0;"><%= p.name %></p>
             <div style="display:flex;gap:8px;">
-              <span class="pill pill--neutral"><svg class="ic-sm" width="12" height="12"><use href="#i-crew"></use></svg><%= p.supervisorCount %> supervisor<%= p.supervisorCount === 1 ? '' : 's' %></span>
-              <span class="pill pill--neutral"><svg class="ic-sm" width="12" height="12"><use href="#i-user"></use></svg><%= p.workerCount %> worker<%= p.workerCount === 1 ? '' : 's' %></span>
+              <span class="pill pill--neutral"><svg class="ic-sm" width="12" height="12"><use href="#i-crew"></use></svg><%= p.supervisors.length %> supervisor<%= p.supervisors.length === 1 ? '' : 's' %></span>
+              <span class="pill pill--neutral"><svg class="ic-sm" width="12" height="12"><use href="#i-user"></use></svg><%= p.workers.length %> worker<%= p.workers.length === 1 ? '' : 's' %></span>
             </div>
           </div>
 
-          <% if (!p.supervisors.length && !p.unassignedCrews.length) { %>
-            <p style="color:var(--steel);font-size:13px;margin:0;">No crews assigned to this project yet.</p>
+          <% if (!p.supervisors.length && !p.workers.length) { %>
+            <p style="color:var(--steel);font-size:13px;margin:0;">Nobody tagged to this project yet.</p>
+          <% } else { %>
+            <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;flex-wrap:wrap;">
+              <span class="pill pill--neutral" style="flex:none;">Supervisors</span>
+              <span style="color:var(--steel);font-size:13px;flex:1;min-width:200px;"><%= p.supervisors.length ? p.supervisors.join(', ') : 'None' %></span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;flex-wrap:wrap;">
+              <span class="pill pill--neutral" style="flex:none;">Workers</span>
+              <span style="color:var(--steel);font-size:13px;flex:1;min-width:200px;"><%= p.workers.length ? p.workers.join(', ') : 'None' %></span>
+            </div>
           <% } %>
 
-          <% p.supervisors.forEach(s => { %>
-            <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0;flex-wrap:wrap;">
-              <span class="pill" style="background:var(--supervisor);color:var(--supervisor-ink);flex:none;"><%= s.name %></span>
-              <span style="color:var(--steel);font-size:13px;flex:1;min-width:200px;">
-                <% if (s.workers.length) { %><%= s.workers.join(', ') %><% } else { %>No workers on their crew(s) yet<% } %>
-              </span>
-            </div>
-          <% }) %>
-
-          <% if (p.unassignedCrews.length) { %>
+          <% if (p.workers.length && !p.supervisors.length) { %>
             <p style="color:var(--warn-text);background:var(--warn-bg);border-radius:8px;padding:8px 10px;font-size:12.5px;margin:8px 0 0;">
               <svg class="ic-sm" width="12" height="12"><use href="#i-alert"></use></svg>
-              No supervisor assigned yet for: <%= p.unassignedCrews.join(', ') %> — nobody can log entries for <%= p.unassignedCrews.length === 1 ? 'it' : 'them' %>.
+              No supervisor tagged to this project yet — nobody can log entries for its workers.
             </p>
           <% } %>
         </div>
@@ -95,40 +95,39 @@
     </div>
 
     <div class="card">
-      <h2 style="margin-bottom:14px;">Crew performance &mdash; today</h2>
+      <h2 style="margin-bottom:14px;">Project performance &mdash; today</h2>
       <div class="table-wrap">
         <table>
-          <tr><th>Crew</th><th>Site</th><th>Activity</th><th>Target vs actual</th><th>Status</th><th class="num">Members</th></tr>
-          <% crews.forEach(c => { %>
+          <tr><th>Project</th><th>Location</th><th>Target vs actual</th><th>Status</th><th class="num">Workers</th></tr>
+          <% projects.forEach(p => { %>
             <tr>
-              <td><%= c.name %></td>
-              <td><%= c.projectName || '—' %></td>
-              <td><%= c.activity_name %></td>
+              <td><%= p.name %></td>
+              <td><%= p.location || '—' %></td>
               <td>
-                <% if (c.percent !== null) { %>
-                  <div class="tbar"><div class="tbar-fill tbar--<%= c.status %>" style="width:<%= Math.min(100, c.percent) %>%"></div></div><span class="tbar-num"><%= c.percent %>%</span>
+                <% if (p.percent !== null) { %>
+                  <div class="tbar"><div class="tbar-fill tbar--<%= p.status %>" style="width:<%= Math.min(100, p.percent) %>%"></div></div><span class="tbar-num"><%= p.percent %>%</span>
                 <% } else { %>
                   <span style="color:var(--steel);font-size:12.5px;">—</span>
                 <% } %>
               </td>
               <td>
-                <% if (c.status === 'good') { %>
+                <% if (p.status === 'good') { %>
                   <span class="status status--good"><svg class="ic-sm" width="11" height="11"><use href="#i-check"></use></svg>On track</span>
-                <% } else if (c.status === 'warn') { %>
+                <% } else if (p.status === 'warn') { %>
                   <span class="status status--warn"><svg class="ic-sm" width="11" height="11"><use href="#i-dot"></use></svg>Watch</span>
-                <% } else if (c.status === 'bad') { %>
+                <% } else if (p.status === 'bad') { %>
                   <span class="status status--bad"><svg class="ic-sm" width="11" height="11"><use href="#i-alert"></use></svg>Behind</span>
-                <% } else if (c.status === 'no-target') { %>
+                <% } else if (p.status === 'no-target') { %>
                   <span class="pill pill--neutral">No target set</span>
                 <% } else { %>
                   <span class="pill pill--neutral">No entry today</span>
                 <% } %>
               </td>
-              <td class="num"><%= c.member_count %></td>
+              <td class="num"><%= p.worker_count %></td>
             </tr>
           <% }) %>
-          <% if (!crews.length) { %>
-            <tr><td colspan="6" style="color:var(--steel);">No crews yet — add some in <a href="/setup/crews">Setup &rarr; Crews</a>.</td></tr>
+          <% if (!projects.length) { %>
+            <tr><td colspan="5" style="color:var(--steel);">No projects yet — add some in <a href="/setup/projects">Setup &rarr; Projects</a>.</td></tr>
           <% } %>
         </table>
       </div>
