@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sabkha Console — PESU</title>
+<meta name="description" content="The PESU Sabkha Console: a 42 mm slab in travertine, desert oak, alabaster, basalt or unlacquered brass. Configure material, finish, dimensions, base and inscription. Made to order in Dubai.">
+<meta name="theme-color" content="#F7F3ED">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2312100E'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='Georgia,serif' font-size='30' fill='%23D6BC8B'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/home.css">
+<link rel="stylesheet" href="assets/css/product.css">
+</head>
+<body data-header="solid">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ======================= HEADER ======================= -->
+<header class="header is-solid" id="header">
+  <div class="header__inner">
+    <nav class="header__nav header__nav--start" aria-label="Primary">
+      <button class="icon-btn menu-toggle" type="button" data-panel="#menu" aria-expanded="false" aria-controls="menu">
+        <span class="menu-toggle__bars" aria-hidden="true"><span></span><span></span></span>
+        <span class="visually-hidden">Open menu</span>
+      </button>
+      <a class="navlink is-current" href="index.html#collections" data-panel="#megamenu" aria-expanded="false" aria-controls="megamenu">Collections</a>
+      <a class="navlink" href="index.html#bespoke">Bespoke</a>
+      <a class="navlink" href="index.html#materials">Materials</a>
+      <a class="navlink" href="index.html#journal">Journal</a>
+    </nav>
+
+    <a class="header__brand" href="index.html" aria-label="PESU — home">
+      <span class="wordmark wordmark--header">Pesu</span>
+    </a>
+
+    <nav class="header__nav header__nav--end" aria-label="Utilities">
+      <button class="icon-btn" type="button" data-panel="#search" aria-expanded="false" aria-controls="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+        <span class="icon-btn__label">Search</span>
+      </button>
+      <span class="currency">
+        <label class="visually-hidden" for="currency-header">Currency</label>
+        <select id="currency-header" data-currency-select></select>
+      </span>
+      <a class="icon-btn" href="index.html#account">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+        <span class="icon-btn__label">Account</span>
+      </a>
+      <a class="icon-btn" href="index.html#wishlist">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-9.4A4.1 4.1 0 0 1 12 7.6a4.1 4.1 0 0 1 7.5 3C19.5 15.4 12 20 12 20Z"/></svg>
+        <span class="icon-btn__count" data-wishlist-count>0</span>
+        <span class="visually-hidden">Wishlist</span>
+      </a>
+      <button class="icon-btn" type="button" data-panel="#cart" aria-expanded="false" aria-controls="cart">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <span class="icon-btn__label">Selection</span>
+        <span class="icon-btn__count" data-cart-count>0</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- ======================= MEGA MENU ======================= -->
+<div class="megamenu" id="megamenu" aria-hidden="true">
+  <div class="shell megamenu__grid">
+    <div class="megamenu__col">
+      <h3>Collections</h3>
+      <ul>
+        <li><a href="index.html#collections">Dune</a></li>
+        <li><a href="index.html#collections">Majlis</a></li>
+        <li><a href="index.html#collections">Ghaf</a></li>
+        <li><a href="product.html">Sabkha</a></li>
+        <li><a href="index.html#collections">Oud &amp; Ash</a></li>
+      </ul>
+    </div>
+    <div class="megamenu__col">
+      <h3>By room</h3>
+      <ul>
+        <li><a href="index.html#collections">Living</a></li>
+        <li><a href="index.html#collections">Dining</a></li>
+        <li><a href="index.html#collections">Entrance</a></li>
+        <li><a href="index.html#collections">Terrace</a></li>
+      </ul>
+    </div>
+    <div class="megamenu__col">
+      <h3>By material</h3>
+      <ul>
+        <li><a href="index.html#materials">Travertine</a></li>
+        <li><a href="index.html#materials">Desert oak</a></li>
+        <li><a href="index.html#materials">Alabaster</a></li>
+        <li><a href="index.html#materials">Brass</a></li>
+      </ul>
+    </div>
+    <div class="megamenu__col megamenu__feature">
+      <a class="tile" href="product.html">
+        <span class="surface mat-travertine" style="aspect-ratio:4/3;display:block"></span>
+        <span class="tile__body"><span class="tile__name" style="font-size:var(--step-1)">Sabkha Console</span></span>
+      </a>
+      <p class="tile__meta">New — configurable in five materials</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= OVERLAYS ======================= -->
+<div class="scrim"></div>
+
+<aside class="drawer drawer--left" id="menu" aria-hidden="true" aria-label="Menu">
+  <div class="drawer__head">
+    <span class="drawer__title">Menu</span>
+    <button class="close-btn" type="button" data-close-panel aria-label="Close menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+    </button>
+  </div>
+  <div class="drawer__body">
+    <ul class="stack">
+      <li><a class="display display--s" href="index.html#collections">Collections</a></li>
+      <li><a class="display display--s" href="index.html#bespoke">Bespoke</a></li>
+      <li><a class="display display--s" href="index.html#materials">Materials</a></li>
+      <li><a class="display display--s" href="index.html#journal">Journal</a></li>
+      <li><a class="display display--s" href="product.html">Sabkha Console</a></li>
+    </ul>
+    <hr class="rule" style="margin:2rem 0">
+    <ul class="stack-sm">
+      <li><a class="link" href="index.html#account">Account</a></li>
+      <li><a class="link" href="index.html#wishlist">Wishlist</a></li>
+      <li><a class="link" href="index.html#concierge">Concierge</a></li>
+      <li>
+        <span class="currency">
+          <label class="visually-hidden" for="currency-menu">Currency</label>
+          <select id="currency-menu" data-currency-select></select>
+        </span>
+      </li>
+    </ul>
+  </div>
+</aside>
+
+<aside class="drawer" id="cart" aria-hidden="true" aria-label="Your selection">
+  <div class="drawer__head">
+    <span class="drawer__title">Your selection</span>
+    <button class="close-btn" type="button" data-close-panel aria-label="Close selection">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+    </button>
+  </div>
+  <div class="drawer__body" data-cart-body></div>
+  <div class="drawer__foot stack" data-cart-foot hidden>
+    <div class="cart-total">
+      <span>Subtotal</span>
+      <span class="num" data-cart-total data-price-aed="0"></span>
+    </div>
+    <p class="cart-note">Duties and VAT calculated at checkout. White-glove delivery and installation included across the UAE.</p>
+    <a class="btn btn--block" href="#checkout">Proceed to checkout</a>
+    <a class="link" href="index.html#concierge" style="display:block;text-align:center">Speak with a design advisor</a>
+  </div>
+</aside>
+
+<div class="search" id="search" aria-hidden="true" role="dialog" aria-label="Search">
+  <div class="shell">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:2rem">
+      <button class="close-btn" type="button" data-close-panel aria-label="Close search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+      </button>
+    </div>
+    <div class="search__field">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+      <label class="visually-hidden" for="search-input">Search PESU</label>
+      <input id="search-input" type="search" placeholder="Search pieces, materials, collections" data-search-input autocomplete="off">
+    </div>
+    <div class="search__suggest">
+      <button type="button" data-search-term="console">Consoles</button>
+      <button type="button" data-search-term="travertine">Travertine</button>
+      <button type="button" data-search-term="ghaf">Ghaf lighting</button>
+      <button type="button" data-search-term="majlis">Majlis seating</button>
+    </div>
+    <div class="search__results" data-search-results></div>
+  </div>
+</div>
+
+<div class="toast-stack" aria-live="polite"></div>
+
+<main id="main" class="pdp">
+  <div class="shell">
+    <ol class="breadcrumb">
+      <li><a href="index.html">PESU</a></li>
+      <li><a href="index.html#collections">Collections</a></li>
+      <li><a href="index.html#collections">Sabkha</a></li>
+      <li aria-current="page">Sabkha Console</li>
+    </ol>
+
+    <div class="pdp__layout">
+
+      <!-- ------------------ GALLERY ------------------ -->
+      <div class="pdp__gallery">
+        <div class="gallery">
+          <div class="gallery__stage surface" role="group" aria-label="Product imagery — click to zoom">
+            <div class="gallery__floor" aria-hidden="true"></div>
+            <div class="gallery__view is-active" data-view="main"></div>
+            <div class="gallery__view gallery__view--fill" data-view="detail"></div>
+            <div class="gallery__view gallery__view--fill" data-view="situ"></div>
+            <div class="gallery__view gallery__view--wide" data-view="dims"></div>
+            <p class="gallery__zoom-hint">Click to zoom</p>
+          </div>
+
+          <div class="gallery__thumbs" role="tablist" aria-label="Views">
+            <button class="gallery__thumb surface" type="button" role="tab" data-view="main" aria-selected="true">
+              <span class="gallery__thumb__inner" data-thumb-art="main"></span>
+              <span class="visually-hidden">Full view</span>
+            </button>
+            <button class="gallery__thumb surface" type="button" role="tab" data-view="detail" aria-selected="false">
+              <span class="gallery__thumb__inner" data-thumb-art="detail"></span>
+              <span class="visually-hidden">Material detail</span>
+            </button>
+            <button class="gallery__thumb surface" type="button" role="tab" data-view="situ" aria-selected="false">
+              <span class="gallery__thumb__inner" data-thumb-art="situ"></span>
+              <span class="visually-hidden">In situ</span>
+            </button>
+            <button class="gallery__thumb surface" type="button" role="tab" data-view="dims" aria-selected="false">
+              <span class="gallery__thumb__inner" data-thumb-art="dims"></span>
+              <span class="visually-hidden">Dimensions</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ------------------ CONFIGURATOR ------------------ -->
+      <form class="config" id="configurator" aria-label="Configure your Sabkha Console" onsubmit="return false">
+        <div class="config__head">
+          <p class="eyebrow">Sabkha collection</p>
+          <h1 class="config__title">Sabkha Console</h1>
+          <p class="config__meta">
+            <span>Made to order</span><span>·</span><span>Edition of 60 per year</span><span>·</span><span>PS-SBK-CON</span>
+          </p>
+          <p class="config__price">
+            <span class="config__price-from">Your configuration</span>
+            <span class="num" data-unit-price>AED 24,500</span>
+          </p>
+          <p class="config__vat">Excl. VAT · White-glove delivery included in the UAE</p>
+          <p class="lead-time" data-lead-time>Atelier lead time 10–12 weeks</p>
+        </div>
+
+        <fieldset class="config__group" style="border-inline:0;border-bottom:0;padding-inline:0">
+          <div class="config__group-head">
+            <legend class="config__group-label">Material</legend>
+            <span class="config__group-value" data-value-for="material"></span>
+          </div>
+          <div class="swatches swatches--labelled" data-options="material" role="group" aria-label="Material"></div>
+        </fieldset>
+
+        <fieldset class="config__group" style="border-inline:0;border-bottom:0;padding-inline:0">
+          <div class="config__group-head">
+            <legend class="config__group-label">Finish</legend>
+            <span class="config__group-value" data-value-for="finish"></span>
+          </div>
+          <div class="options" data-options="finish"></div>
+        </fieldset>
+
+        <fieldset class="config__group" style="border-inline:0;border-bottom:0;padding-inline:0">
+          <div class="config__group-head">
+            <legend class="config__group-label">Dimensions</legend>
+            <span class="config__group-value" data-value-for="size"></span>
+          </div>
+          <div class="options" data-options="size"></div>
+          <div class="dims" data-custom-dims hidden>
+            <label class="field">
+              <span class="field__label">Width cm</span>
+              <input class="field__input num" type="number" min="120" max="400" value="200" data-custom-dim="w">
+            </label>
+            <label class="field">
+              <span class="field__label">Depth cm</span>
+              <input class="field__input num" type="number" min="40" max="120" value="45" data-custom-dim="d">
+            </label>
+            <label class="field">
+              <span class="field__label">Height cm</span>
+              <input class="field__input num" type="number" min="60" max="120" value="86" data-custom-dim="h">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="config__group" style="border-inline:0;border-bottom:0;padding-inline:0">
+          <div class="config__group-head">
+            <legend class="config__group-label">Base</legend>
+            <span class="config__group-value" data-value-for="base"></span>
+          </div>
+          <div class="options" data-options="base"></div>
+        </fieldset>
+
+        <fieldset class="config__group" style="border-inline:0;border-bottom:0;padding-inline:0">
+          <div class="config__group-head">
+            <legend class="config__group-label">Inscription</legend>
+            <span class="config__group-value num" data-price-aed="680" data-price-prefix="+ "></span>
+          </div>
+          <label class="field">
+            <span class="visually-hidden">Text to engrave</span>
+            <input class="field__input" type="text" placeholder="A name, a date, a coordinate" data-engrave-input autocomplete="off">
+          </label>
+          <p class="field__hint">
+            <span>Hand-engraved into the front edge, filled in brass</span>
+            <span class="num" data-engrave-count>0 / 22</span>
+          </p>
+          <div class="engrave__preview is-empty" data-engrave-preview aria-live="polite">
+            <span>Your inscription appears here</span>
+          </div>
+        </fieldset>
+
+        <div class="config__summary">
+          <h3>Your configuration</h3>
+          <dl data-summary></dl>
+        </div>
+
+        <div class="config__actions" data-buy-anchor>
+          <div class="config__row">
+            <div class="qty" role="group" aria-label="Quantity">
+              <button type="button" data-qty-step="-1" aria-label="Decrease quantity">−</button>
+              <output class="num" data-qty>1</output>
+              <button type="button" data-qty-step="1" aria-label="Increase quantity">+</button>
+            </div>
+            <button class="btn" style="flex:1" type="button" data-add-to-cart>Add to selection</button>
+          </div>
+          <div class="config__row">
+            <button class="wish-btn" type="button" data-wishlist-sku="PS-SBK-CON-180" style="flex:1">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-9.4A4.1 4.1 0 0 1 12 7.6a4.1 4.1 0 0 1 7.5 3C19.5 15.4 12 20 12 20Z"/></svg>
+              Save
+            </button>
+            <button class="wish-btn" type="button" data-swatch-box style="flex:1">Swatch box</button>
+          </div>
+          <button class="btn btn--ghost btn--block" type="button" data-book-consult>Book a design consultation</button>
+        </div>
+
+        <ul class="config__assurance">
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4v6c0 5-3.5 7.5-8 8-4.5-.5-8-3-8-8V7Z"/></svg>
+            <span>Made to order in Al Quoz, Dubai. Hand-numbered, with a signed certificate of provenance.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V8l9-4 9 4v8l-9 4-9-4Z"/></svg>
+            <span>White-glove delivery, installation and styling — included across the UAE and GCC.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span>Lifetime restoration: re-honing, re-oiling and brass re-finishing, collected and returned.</span>
+          </li>
+        </ul>
+      </form>
+
+      <!-- ------------------ STORY ------------------ -->
+      <section class="pdp__story">
+          <div class="stack" data-reveal>
+            <p class="eyebrow">The piece</p>
+            <h2 class="display display--m">A surface left by weather,<br>not assembled by hand</h2>
+            <div class="prose">
+              <p>Sabkha are the salt flats that lie between Dubai and the Empty Quarter — a surface that looks solid from a distance and reads, up close, as a thousand fractured plates of crystal and sand.</p>
+              <p>The console takes that geology literally. A single 42&nbsp;mm slab is cut, honed and set on a plinth with no visible fixings, mitred at the corners so the material appears to fold rather than join. Under the top, a hand-numbered brass disc; on the front edge, your inscription, if you want one.</p>
+            </div>
+          </div>
+
+          <div class="pdp__story-grid" data-reveal>
+            <div class="surface mat-basalt"></div>
+            <div class="surface mat-travertine"></div>
+          </div>
+
+          <div class="accordion" data-reveal>
+            <div class="accordion__item">
+              <button class="accordion__trigger" type="button" aria-expanded="false">
+                Dimensions &amp; weight <span class="accordion__sign" aria-hidden="true"></span>
+              </button>
+              <div class="accordion__panel"><div><div class="inner">
+                <dl>
+                  <dt>160 cm</dt><dd>160 × 40 × 84 cm — approx. 148 kg</dd>
+                  <dt>180 cm</dt><dd>180 × 42 × 84 cm — approx. 176 kg</dd>
+                  <dt>220 cm</dt><dd>220 × 45 × 86 cm — approx. 228 kg</dd>
+                  <dt>Bespoke</dt><dd>Any dimension between 120 and 400 cm, drawn to your architect's specification</dd>
+                  <dt>Slab</dt><dd>42 mm, mitred edge, 4 mm eased arris</dd>
+                </dl>
+              </div></div></div>
+            </div>
+            <div class="accordion__item">
+              <button class="accordion__trigger" type="button" aria-expanded="false">
+                Materials &amp; care <span class="accordion__sign" aria-hidden="true"></span>
+              </button>
+              <div class="accordion__panel"><div><div class="inner">
+                <p>Seal annually with the PESU stone balm included in your delivery. Wipe with a soft, damp cloth; avoid citrus and alcohol on porous stone. Unlacquered brass will patinate — this is intended, and reversible at any time through our restoration service.</p>
+              </div></div></div>
+            </div>
+            <div class="accordion__item">
+              <button class="accordion__trigger" type="button" aria-expanded="false">
+                Delivery &amp; white-glove installation <span class="accordion__sign" aria-hidden="true"></span>
+              </button>
+              <div class="accordion__panel"><div><div class="inner">
+                <dl>
+                  <dt>UAE</dt><dd>Included. Two-person delivery, installation, levelling and styling; packaging removed the same day.</dd>
+                  <dt>GCC</dt><dd>Included. Customs handled by PESU; 2–3 weeks after the atelier releases the piece.</dd>
+                  <dt>Worldwide</dt><dd>Quoted at checkout. Crated, insured, air or sea freight, installed by a vetted local partner.</dd>
+                  <dt>Tracking</dt><dd>Your account shows each atelier stage — block selected, cut, honed, assembled, crated, in transit, installed — with photographs.</dd>
+                </dl>
+              </div></div></div>
+            </div>
+            <div class="accordion__item">
+              <button class="accordion__trigger" type="button" aria-expanded="false">
+                Provenance <span class="accordion__sign" aria-hidden="true"></span>
+              </button>
+              <div class="accordion__panel"><div><div class="inner">
+                <p>Every piece carries a hand-numbered brass disc on the underside and a signed certificate recording the block it was cut from, the maker, and the date it left the atelier in Al Quoz. Registered to your account for insurance and resale.</p>
+              </div></div></div>
+            </div>
+          </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ------------------ ATELIER BAND ------------------ -->
+  <section class="section on-dark" style="margin-top:var(--section-y)">
+    <div class="shell atelier-band">
+      <div class="stack-lg" data-reveal>
+        <p class="eyebrow">Not quite it?</p>
+        <h2 class="display display--l">Have it drawn<br>from <em>nothing</em></h2>
+        <p class="lede">If the console should be nine metres long, curved to a wall, or cut from a block you have already chosen — that is a commission, and our atelier takes twelve a year.</p>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <a class="btn btn--light" href="index.html#bespoke">Begin a commission</a>
+          <a class="link" href="index.html#concierge" style="align-self:center">Speak with the atelier</a>
+        </div>
+      </div>
+      <div class="surface mat-basalt" style="aspect-ratio:4/3" data-reveal></div>
+    </div>
+  </section>
+
+  <!-- ------------------ RELATED ------------------ -->
+  <section class="section">
+    <div class="shell">
+      <div class="section-head" data-reveal>
+        <div class="section-head__text">
+          <p class="eyebrow">Completes the room</p>
+          <h2 class="display display--m">Shown with</h2>
+        </div>
+        <a class="link" href="index.html#collections">All collections</a>
+      </div>
+      <div class="related__grid" data-reveal data-reveal-stagger>
+        <a class="tile" href="product.html" data-reveal-child>
+          <div class="tile__media surface mat-alabaster"></div>
+          <div class="tile__body">
+            <div><h3 class="tile__name">Ghaf Pendant</h3><p class="tile__meta">Ghaf</p></div>
+            <p class="tile__price num" data-price-aed="18900"></p>
+          </div>
+        </a>
+        <a class="tile" href="product.html" data-reveal-child>
+          <div class="tile__media surface mat-boucle"></div>
+          <div class="tile__body">
+            <div><h3 class="tile__name">Majlis Low Seat</h3><p class="tile__meta">Majlis</p></div>
+            <p class="tile__price num" data-price-aed="32400"></p>
+          </div>
+        </a>
+        <a class="tile" href="product.html" data-reveal-child>
+          <div class="tile__media surface mat-travertine"></div>
+          <div class="tile__body">
+            <div><h3 class="tile__name">Dune Side Table</h3><p class="tile__meta">Dune</p></div>
+            <p class="tile__price num" data-price-aed="11200"></p>
+          </div>
+        </a>
+        <a class="tile" href="product.html" data-reveal-child>
+          <div class="tile__media surface mat-clay"></div>
+          <div class="tile__body">
+            <div><h3 class="tile__name">Oud Vessel, Tall</h3><p class="tile__meta">Sabkha</p></div>
+            <p class="tile__price num" data-price-aed="6400"></p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ------------------ STICKY BUY BAR (mobile) ------------------ -->
+<div class="buybar">
+  <div>
+    <p class="tile__meta">Sabkha Console</p>
+    <p class="buybar__price num" data-buybar-price>AED 24,500</p>
+  </div>
+  <button class="btn" type="button" data-add-to-cart>Add to selection</button>
+</div>
+
+<!-- ======================= FOOTER ======================= -->
+<footer class="footer on-dark">
+  <div class="shell">
+    <div class="footer__grid">
+      <div class="footer__col stack">
+        <p class="eyebrow eyebrow--bare">PESU</p>
+        <p class="prose" style="max-width:34ch">Ultra-luxury home decor, made to order in Al Quoz, Dubai. Delivered and installed worldwide.</p>
+        <p class="tile__meta">Atelier &amp; showroom<br>Warehouse 14, Alserkal Avenue<br>Al Quoz 1, Dubai, UAE</p>
+      </div>
+      <div class="footer__col">
+        <h3>Shop</h3>
+        <ul>
+          <li><a href="index.html#collections">Collections</a></li>
+          <li><a href="product.html">Sabkha Console</a></li>
+          <li><a href="index.html#materials">Materials</a></li>
+          <li><a href="index.html#bespoke">Bespoke commissions</a></li>
+          <li><a href="index.html#concierge">Swatch box</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h3>Client</h3>
+        <ul>
+          <li><a href="index.html#account">Account</a></li>
+          <li><a href="index.html#account">Order tracking</a></li>
+          <li><a href="index.html#wishlist">Wishlist</a></li>
+          <li><a href="index.html#concierge">Concierge</a></li>
+          <li><a href="index.html#concierge">Trade &amp; interior design</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h3>House</h3>
+        <ul>
+          <li><a href="index.html#manifesto">The atelier</a></li>
+          <li><a href="index.html#journal">Journal</a></li>
+          <li><a href="index.html#concierge">Care &amp; restoration</a></li>
+          <li><a href="index.html#concierge">Sustainability</a></li>
+          <li><a href="index.html#concierge">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer__wordmark">
+      <span class="wordmark wordmark--footer">Pesu</span>
+    </div>
+
+    <div class="footer__legal">
+      <p>© <span data-year>2026</span> PESU Home LLC, Dubai. All rights reserved.</p>
+      <ul>
+        <li><a href="#">Terms</a></li>
+        <li><a href="#">Privacy</a></li>
+        <li><a href="#">Shipping &amp; returns</a></li>
+        <li>
+          <span class="currency">
+            <label class="visually-hidden" for="currency-footer">Currency</label>
+            <select id="currency-footer" data-currency-select></select>
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/store.js"></script>
+<script src="assets/js/catalog.js"></script>
+<script src="assets/js/art.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/product.js"></script>
+</body>
+</html>

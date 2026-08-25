@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PESU — Ultra-luxury home decor, made to order in Dubai</title>
+<meta name="description" content="PESU is a Dubai house of ultra-luxury home decor: sculptural furniture, lighting and objects in travertine, desert oak, alabaster and unlacquered brass. Every piece made to order and customisable.">
+<meta name="theme-color" content="#12100E">
+<meta property="og:title" content="PESU — The desert, refined">
+<meta property="og:description" content="Made-to-order furniture and objects in natural materials. Designed and finished in Dubai.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2312100E'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='Georgia,serif' font-size='30' fill='%23D6BC8B'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/home.css">
+</head>
+<body data-header="overlay">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ======================= HEADER ======================= -->
+<header class="header" id="header">
+  <div class="header__inner">
+    <nav class="header__nav header__nav--start" aria-label="Primary">
+      <button class="icon-btn menu-toggle" type="button" data-panel="#menu" aria-expanded="false" aria-controls="menu">
+        <span class="menu-toggle__bars" aria-hidden="true"><span></span><span></span></span>
+        <span class="visually-hidden">Open menu</span>
+      </button>
+      <a class="navlink" href="#collections" data-panel="#megamenu" aria-expanded="false" aria-controls="megamenu">Collections</a>
+      <a class="navlink" href="#bespoke">Bespoke</a>
+      <a class="navlink" href="#materials">Materials</a>
+      <a class="navlink" href="#journal">Journal</a>
+    </nav>
+
+    <a class="header__brand" href="index.html" aria-label="PESU — home">
+      <span class="wordmark wordmark--header">Pesu</span>
+    </a>
+
+    <nav class="header__nav header__nav--end" aria-label="Utilities">
+      <button class="icon-btn" type="button" data-panel="#search" aria-expanded="false" aria-controls="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+        <span class="icon-btn__label">Search</span>
+      </button>
+      <span class="currency">
+        <label class="visually-hidden" for="currency-header">Currency</label>
+        <select id="currency-header" data-currency-select></select>
+      </span>
+      <a class="icon-btn" href="#account">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+        <span class="icon-btn__label">Account</span>
+      </a>
+      <a class="icon-btn" href="#wishlist">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-9.4A4.1 4.1 0 0 1 12 7.6a4.1 4.1 0 0 1 7.5 3C19.5 15.4 12 20 12 20Z"/></svg>
+        <span class="icon-btn__count" data-wishlist-count>0</span>
+        <span class="visually-hidden">Wishlist</span>
+      </a>
+      <button class="icon-btn" type="button" data-panel="#cart" aria-expanded="false" aria-controls="cart">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <span class="icon-btn__label">Selection</span>
+        <span class="icon-btn__count" data-cart-count>0</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- ======================= MEGA MENU ======================= -->
+<div class="megamenu" id="megamenu" aria-hidden="true">
+  <div class="shell megamenu__grid">
+    <div class="megamenu__col">
+      <h3>Collections</h3>
+      <ul>
+        <li><a href="#collections">Dune</a></li>
+        <li><a href="#collections">Majlis</a></li>
+        <li><a href="#collections">Ghaf</a></li>
+        <li><a href="product.html">Sabkha</a></li>
+        <li><a href="#collections">Oud &amp; Ash</a></li>
+      </ul>
+    </div>
+    <div class="megamenu__col">
+      <h3>By room</h3>
+      <ul>
+        <li><a href="#collections">Living</a></li>
+        <li><a href="#collections">Dining</a></li>
+        <li><a href="#collections">Entrance</a></li>
+        <li><a href="#collections">Terrace</a></li>
+      </ul>
+    </div>
+    <div class="megamenu__col">
+      <h3>By material</h3>
+      <ul>
+        <li><a href="#materials">Travertine</a></li>
+        <li><a href="#materials">Desert oak</a></li>
+        <li><a href="#materials">Alabaster</a></li>
+        <li><a href="#materials">Brass</a></li>
+      </ul>
+    </div>
+    <div class="megamenu__col megamenu__feature">
+      <a class="tile" href="product.html">
+        <span class="surface mat-travertine" style="aspect-ratio:4/3;display:block"></span>
+        <span class="tile__body"><span class="tile__name" style="font-size:var(--step-1)">Sabkha Console</span></span>
+      </a>
+      <p class="tile__meta">New — configurable in five materials</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= OVERLAYS ======================= -->
+<div class="scrim"></div>
+
+<aside class="drawer drawer--left" id="menu" aria-hidden="true" aria-label="Menu">
+  <div class="drawer__head">
+    <span class="drawer__title">Menu</span>
+    <button class="close-btn" type="button" data-close-panel aria-label="Close menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+    </button>
+  </div>
+  <div class="drawer__body">
+    <ul class="stack">
+      <li><a class="display display--s" href="#collections">Collections</a></li>
+      <li><a class="display display--s" href="#bespoke">Bespoke</a></li>
+      <li><a class="display display--s" href="#materials">Materials</a></li>
+      <li><a class="display display--s" href="#journal">Journal</a></li>
+      <li><a class="display display--s" href="product.html">Sabkha Console</a></li>
+    </ul>
+    <hr class="rule" style="margin:2rem 0">
+    <ul class="stack-sm">
+      <li><a class="link" href="#account">Account</a></li>
+      <li><a class="link" href="#wishlist">Wishlist</a></li>
+      <li><a class="link" href="#concierge">Concierge</a></li>
+      <li>
+        <span class="currency">
+          <label class="visually-hidden" for="currency-menu">Currency</label>
+          <select id="currency-menu" data-currency-select></select>
+        </span>
+      </li>
+    </ul>
+  </div>
+</aside>
+
+<aside class="drawer" id="cart" aria-hidden="true" aria-label="Your selection">
+  <div class="drawer__head">
+    <span class="drawer__title">Your selection</span>
+    <button class="close-btn" type="button" data-close-panel aria-label="Close selection">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+    </button>
+  </div>
+  <div class="drawer__body" data-cart-body></div>
+  <div class="drawer__foot stack" data-cart-foot hidden>
+    <div class="cart-total">
+      <span>Subtotal</span>
+      <span class="num" data-cart-total data-price-aed="0"></span>
+    </div>
+    <p class="cart-note">Duties and VAT calculated at checkout. White-glove delivery and installation included across the UAE.</p>
+    <a class="btn btn--block" href="#checkout">Proceed to checkout</a>
+    <a class="link" href="#concierge" style="display:block;text-align:center">Speak with a design advisor</a>
+  </div>
+</aside>
+
+<div class="search" id="search" aria-hidden="true" role="dialog" aria-label="Search">
+  <div class="shell">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:2rem">
+      <button class="close-btn" type="button" data-close-panel aria-label="Close search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+      </button>
+    </div>
+    <div class="search__field">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+      <label class="visually-hidden" for="search-input">Search PESU</label>
+      <input id="search-input" type="search" placeholder="Search pieces, materials, collections" data-search-input autocomplete="off">
+    </div>
+    <div class="search__suggest">
+      <button type="button" data-search-term="console">Consoles</button>
+      <button type="button" data-search-term="travertine">Travertine</button>
+      <button type="button" data-search-term="ghaf">Ghaf lighting</button>
+      <button type="button" data-search-term="majlis">Majlis seating</button>
+    </div>
+    <div class="search__results" data-search-results></div>
+  </div>
+</div>
+
+<div class="toast-stack" aria-live="polite"></div>
+
+<main id="main">
+
+<!-- ======================= HERO ======================= -->
+<section class="hero">
+  <div class="hero__stage" aria-hidden="true">
+    <div class="hero__layer hero__sky" style="--depth:0.06"></div>
+    <div class="hero__sun"></div>
+    <div class="hero__layer" style="--depth:0.16">
+      <div class="hero__dune" style="--dune-bg:#241C14;--dune-h:52%;--dune-bottom:-16%;left:-30%;right:20%"></div>
+    </div>
+    <div class="hero__layer" style="--depth:0.26">
+      <div class="hero__dune" style="--dune-bg:#191309;--dune-h:40%;--dune-bottom:-12%;left:15%;right:-25%"></div>
+    </div>
+    <div class="hero__layer" style="--depth:0.4">
+      <div class="hero__dune" style="--dune-bg:#0D0B08;--dune-h:26%;--dune-bottom:-8%"></div>
+    </div>
+    <div class="hero__grain"></div>
+    <div class="hero__vignette"></div>
+  </div>
+
+  <div class="hero__center shell">
+    <p class="hero__tagline">Dubai · Est. 2026</p>
+    <h1 class="wordmark wordmark--hero hero__wordmark" aria-label="PESU">
+      <span style="--i:0" aria-hidden="true">P</span><span style="--i:1" aria-hidden="true">E</span><span style="--i:2" aria-hidden="true">S</span><span style="--i:3" aria-hidden="true">U</span>
+    </h1>
+    <p class="hero__tagline" style="animation-delay:1.1s">The desert, refined</p>
+    <p class="hero__sub">Sculptural furniture and objects cut from stone, wood and unlacquered brass — made to order, and made to be altered until they are yours.</p>
+    <div class="hero__cta">
+      <a class="btn btn--light" href="#collections">Enter the collections</a>
+    </div>
+  </div>
+
+  <div class="hero__foot shell">
+    <p>Made to order in Al&nbsp;Quoz, Dubai</p>
+    <div class="hero__scroll"><i></i><span>Scroll</span></div>
+    <p>Delivered worldwide, white-glove</p>
+  </div>
+</section>
+
+<!-- ======================= TICKER ======================= -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker__track">
+    <span>Natural materials, honestly finished</span>
+    <span>Every piece configurable</span>
+    <span>Hand-numbered, certificate of provenance</span>
+    <span>White-glove delivery across the GCC</span>
+    <span>Lifetime restoration</span>
+  </div>
+</div>
+
+<!-- ======================= MANIFESTO ======================= -->
+<section class="section" id="manifesto">
+  <div class="shell manifesto__grid">
+    <div class="manifesto__statement stack-lg" data-reveal>
+      <p class="eyebrow">The house</p>
+      <h2 class="display display--l">
+        <span class="line-mask"><span>We make objects</span></span>
+        <span class="line-mask" style="--reveal-delay:90ms"><span>the way the desert</span></span>
+        <span class="line-mask" style="--reveal-delay:180ms"><span>makes <em>landscape</em>.</span></span>
+      </h2>
+      <div class="manifesto__body prose">
+        <p>Slowly. From very few materials. With the marks of the process left visible, because that is the evidence of a human hand.</p>
+        <p>PESU begins with a block of stone, a length of air-dried oak, a sheet of brass left unlacquered so it will change. Nothing is veneered, nothing pretends to be something else. What innovation we allow ourselves goes into engineering — invisible joinery, a cantilever that should not hold, a slab milled to eight millimetres until alabaster turns to light.</p>
+        <p>Then we hand the object back to you unfinished, in one sense: dimension, finish, base, inscription. A PESU piece is only complete once it has been specified by the person who will live with it.</p>
+      </div>
+      <p class="manifesto__sig">— The atelier, Al Quoz</p>
+    </div>
+
+    <figure class="manifesto__media surface mat-travertine" data-reveal style="--reveal-delay:120ms">
+      <figcaption>Travertine block 04 — Ras Al Khaimah</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ======================= COLLECTIONS ======================= -->
+<section class="section section--flush-top" id="collections">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div class="section-head__text">
+        <p class="eyebrow">Collections</p>
+        <h2 class="display display--m">Four families, one grammar</h2>
+      </div>
+      <a class="link" href="#collections">View all pieces</a>
+    </div>
+
+    <div class="collections__grid" data-reveal data-reveal-stagger>
+      <a class="tile collection-tile" href="product.html" data-reveal-child>
+        <div class="tile__media surface mat-travertine">
+          <span class="tile__index">01</span>
+          <span class="collection-tile__cta">Discover Dune</span>
+        </div>
+        <div class="tile__body">
+          <div>
+            <h3 class="tile__name">Dune</h3>
+            <p class="tile__meta">Seating &amp; consoles</p>
+          </div>
+          <p class="tile__price">14 pieces</p>
+        </div>
+      </a>
+
+      <a class="tile collection-tile" href="product.html" data-reveal-child>
+        <div class="tile__media surface mat-boucle">
+          <span class="tile__index">02</span>
+          <span class="collection-tile__cta">Discover Majlis</span>
+        </div>
+        <div class="tile__body">
+          <div>
+            <h3 class="tile__name">Majlis</h3>
+            <p class="tile__meta">Modular low seating</p>
+          </div>
+          <p class="tile__price">11 pieces</p>
+        </div>
+      </a>
+
+      <a class="tile collection-tile" href="product.html" data-reveal-child>
+        <div class="tile__media surface mat-brass">
+          <span class="tile__index">03</span>
+          <span class="collection-tile__cta">Discover Ghaf</span>
+        </div>
+        <div class="tile__body">
+          <div>
+            <h3 class="tile__name">Ghaf</h3>
+            <p class="tile__meta">Lighting</p>
+          </div>
+          <p class="tile__price">9 pieces</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SPOTLIGHT ======================= -->
+<section class="section spotlight on-dark">
+  <div class="shell spotlight__grid">
+    <div class="spotlight__stage" data-reveal>
+      <div class="spotlight__halo" aria-hidden="true"></div>
+      <div class="spotlight__object" data-art="pendant"></div>
+    </div>
+    <div class="stack-lg" data-reveal style="--reveal-delay:100ms">
+      <p class="eyebrow">Piece of the season</p>
+      <h2 class="display display--l">Ghaf Pendant</h2>
+      <p class="lede">Alabaster milled to eight millimetres at the rim, suspended on a single brass stem. Lit, it stops being stone and becomes weather.</p>
+      <dl class="spotlight__specs">
+        <div><dt>Material</dt><dd>Alabaster &amp; brass</dd></div>
+        <div><dt>Diameter</dt><dd>92 cm</dd></div>
+        <div><dt>Lead time</dt><dd>12–14 weeks</dd></div>
+        <div><dt>From</dt><dd class="num" data-price-aed="18900"></dd></div>
+      </dl>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap">
+        <a class="btn btn--light" href="product.html">Configure this piece</a>
+        <a class="btn btn--ghost" href="#bespoke">Request a viewing</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CUSTOMISATION ======================= -->
+<section class="section" id="customise">
+  <div class="shell configure__grid">
+    <div class="stack-lg" data-reveal>
+      <p class="eyebrow">Customisation</p>
+      <h2 class="display display--m">Specify it down to the grain</h2>
+      <p class="lede">Five materials. Four finishes. Any dimension your architect draws. Choose here, or in the configurator on every product page — the price and the atelier lead time move with you.</p>
+      <div class="swatches swatches--labelled" data-teaser-swatches role="group" aria-label="Preview materials"></div>
+      <p class="prose" style="max-width:44ch">Order a swatch box and we will courier the five materials to your address in Dubai, cut from the same blocks your piece will be made from.</p>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap">
+        <a class="btn" href="product.html">Open the configurator</a>
+        <a class="link" href="#concierge" style="align-self:center">Request a swatch box</a>
+      </div>
+    </div>
+
+    <div class="configure__preview surface" data-teaser-preview data-reveal style="--reveal-delay:100ms">
+      <div class="configure__object" data-teaser-object></div>
+      <p class="configure__caption" data-teaser-caption></p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= MATERIALS ======================= -->
+<section class="section section--tight" id="materials">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div class="section-head__text">
+        <p class="eyebrow">Materials</p>
+        <h2 class="display display--m">Six materials, no substitutes</h2>
+      </div>
+      <p class="tile__meta">Drag to explore →</p>
+    </div>
+  </div>
+  <div class="shell">
+    <div class="materials__rail" data-reveal>
+      <article class="material-card">
+        <div class="surface mat-travertine"></div>
+        <h3>Travertine</h3>
+        <p>Cut from a single block so the veining runs unbroken across a whole collection.</p>
+        <span class="material-card__origin">Ras Al Khaimah</span>
+      </article>
+      <article class="material-card">
+        <div class="surface mat-oak"></div>
+        <h3>Desert oak</h3>
+        <p>Smoked to a deep amber, finished with hardwax oil and nothing else.</p>
+        <span class="material-card__origin">Air-dried 18 months</span>
+      </article>
+      <article class="material-card">
+        <div class="surface mat-brass"></div>
+        <h3>Brass</h3>
+        <p>Left unlacquered. It records every hand that has touched it.</p>
+        <span class="material-card__origin">Cast in Al Quoz</span>
+      </article>
+      <article class="material-card">
+        <div class="surface mat-alabaster"></div>
+        <h3>Alabaster</h3>
+        <p>Milled to eight millimetres at the rim, where it turns translucent under light.</p>
+        <span class="material-card__origin">Iberian quarry</span>
+      </article>
+      <article class="material-card">
+        <div class="surface mat-boucle"></div>
+        <h3>Bouclé</h3>
+        <p>Undyed camel and wool, looped on a slow shuttle loom.</p>
+        <span class="material-card__origin">Woven in Puglia</span>
+      </article>
+      <article class="material-card">
+        <div class="surface mat-basalt"></div>
+        <h3>Basalt</h3>
+        <p>Flamed until the surface opens, then brushed back to graphite.</p>
+        <span class="material-card__origin">Hajar mountains</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= BESPOKE ======================= -->
+<section class="section bespoke on-dark" id="bespoke">
+  <div class="bespoke__bg" aria-hidden="true"></div>
+  <div class="shell bespoke__inner bespoke__grid">
+    <div class="stack-lg" data-reveal>
+      <p class="eyebrow">The atelier</p>
+      <h2 class="display display--l">Commission<br>something that<br>does not <em>exist</em></h2>
+      <p class="lede">A nine-metre dining table for a villa on the Palm. A stone reception desk cut to an architect's radius. Our atelier takes twelve private commissions a year.</p>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap">
+        <a class="btn btn--light" href="#bespoke">Begin a commission</a>
+        <a class="link" href="#concierge" style="align-self:center">Speak with the atelier</a>
+      </div>
+    </div>
+
+    <div class="bespoke__steps" data-reveal data-reveal-stagger>
+      <article class="bespoke__step" data-reveal-child>
+        <div>
+          <h3>Conversation</h3>
+          <p>A private appointment at the Al Quoz atelier, at your residence, or by video anywhere in the world.</p>
+        </div>
+      </article>
+      <article class="bespoke__step" data-reveal-child>
+        <div>
+          <h3>Drawing</h3>
+          <p>Renders, a materials board and a 1:20 technical drawing, within three weeks.</p>
+        </div>
+      </article>
+      <article class="bespoke__step" data-reveal-child>
+        <div>
+          <h3>Making</h3>
+          <p>Photographed at each stage, from the block being selected to the final hand-honing.</p>
+        </div>
+      </article>
+      <article class="bespoke__step" data-reveal-child>
+        <div>
+          <h3>Installation</h3>
+          <p>Placed, levelled and styled by our team. The crate leaves with them.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CONCIERGE ======================= -->
+<section class="section" id="concierge">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div class="section-head__text">
+        <p class="eyebrow">The PESU service</p>
+        <h2 class="display display--m">Owning it should feel<br>as considered as choosing it</h2>
+      </div>
+    </div>
+    <div class="concierge__grid" data-reveal data-reveal-stagger>
+      <article class="concierge__item" data-reveal-child>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V8l9-4 9 4v8l-9 4-9-4Z"/><path d="M3 8l9 4 9-4M12 12v8"/></svg>
+        <h3>White-glove delivery</h3>
+        <p>Two-person installation, levelling and styling across the UAE, GCC, Europe and North America. Packaging removed the same day.</p>
+      </article>
+      <article class="concierge__item" data-reveal-child>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <h3>Private client concierge</h3>
+        <p>One advisor from first drawing to installation day, reachable on WhatsApp in English, Arabic, French and Russian.</p>
+      </article>
+      <article class="concierge__item" data-reveal-child>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.4.8-4.7 4.3 1.3 6.3L12 17l-5.6 3 1.3-6.3L3 9.4l6.4-.8L12 3Z"/></svg>
+        <h3>Lifetime restoration</h3>
+        <p>Re-honing, re-oiling and brass re-finishing for as long as you own the piece. Collected and returned by our team.</p>
+      </article>
+      <article class="concierge__item" data-reveal-child>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
+        <h3>Certificate of provenance</h3>
+        <p>Hand-numbered brass disc, the block it came from, the maker's name and the date it left the atelier.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= JOURNAL ======================= -->
+<section class="section section--tight" id="journal">
+  <div class="shell">
+    <div class="section-head" data-reveal>
+      <div class="section-head__text">
+        <p class="eyebrow">Journal</p>
+        <h2 class="display display--m">Notes from the atelier</h2>
+      </div>
+      <a class="link" href="#journal">Read the journal</a>
+    </div>
+    <div class="journal__grid" data-reveal data-reveal-stagger>
+      <a class="tile journal-card" href="#journal" data-reveal-child>
+        <div class="tile__media surface mat-travertine"></div>
+        <span class="journal-card__kicker">At home with</span>
+        <h3>A tower apartment on the Palm, furnished in three materials</h3>
+        <p>Restraint as a form of luxury: one stone, one wood, one metal, repeated.</p>
+      </a>
+      <a class="tile journal-card" href="#journal" data-reveal-child>
+        <div class="tile__media surface mat-basalt"></div>
+        <span class="journal-card__kicker">In the atelier</span>
+        <h3>Sixty hours of hand-honing, in eleven photographs</h3>
+        <p>How a slab becomes a surface you want to touch on the way past.</p>
+      </a>
+      <a class="tile journal-card" href="#journal" data-reveal-child>
+        <div class="tile__media surface mat-brass"></div>
+        <span class="journal-card__kicker">Material study</span>
+        <h3>Why we leave brass unlacquered</h3>
+        <p>Patina is not a defect. It is the object keeping a record of your life.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= INVITATION ======================= -->
+<section class="section invitation">
+  <div class="shell--narrow shell stack-lg" data-reveal>
+    <p class="eyebrow eyebrow--bare">The list</p>
+    <h2 class="display display--m">Private views, before anyone else</h2>
+    <p class="lede" style="margin-inline:auto">Four letters a year: new collections, the atelier's open days, and pieces released in editions of ten.</p>
+    <form class="newsletter" onsubmit="event.preventDefault();this.reset();window.PESU.ui.toast('Thank you — welcome to the list');">
+      <label class="field">
+        <span class="visually-hidden">Email address</span>
+        <input class="field__input" type="email" required placeholder="your@email.com" autocomplete="email">
+      </label>
+      <button type="submit">Join</button>
+    </form>
+  </div>
+</section>
+
+</main>
+
+<!-- ======================= FOOTER ======================= -->
+<footer class="footer on-dark">
+  <div class="shell">
+    <div class="footer__grid">
+      <div class="footer__col stack">
+        <p class="eyebrow eyebrow--bare">PESU</p>
+        <p class="prose" style="max-width:34ch">Ultra-luxury home decor, made to order in Al Quoz, Dubai. Delivered and installed worldwide.</p>
+        <p class="tile__meta">Atelier &amp; showroom<br>Warehouse 14, Alserkal Avenue<br>Al Quoz 1, Dubai, UAE</p>
+      </div>
+      <div class="footer__col">
+        <h3>Shop</h3>
+        <ul>
+          <li><a href="#collections">Collections</a></li>
+          <li><a href="product.html">Sabkha Console</a></li>
+          <li><a href="#materials">Materials</a></li>
+          <li><a href="#bespoke">Bespoke commissions</a></li>
+          <li><a href="#concierge">Swatch box</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h3>Client</h3>
+        <ul>
+          <li><a href="#account">Account</a></li>
+          <li><a href="#account">Order tracking</a></li>
+          <li><a href="#wishlist">Wishlist</a></li>
+          <li><a href="#concierge">Concierge</a></li>
+          <li><a href="#concierge">Trade &amp; interior design</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h3>House</h3>
+        <ul>
+          <li><a href="#manifesto">The atelier</a></li>
+          <li><a href="#journal">Journal</a></li>
+          <li><a href="#concierge">Care &amp; restoration</a></li>
+          <li><a href="#concierge">Sustainability</a></li>
+          <li><a href="#concierge">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer__wordmark">
+      <span class="wordmark wordmark--footer">Pesu</span>
+    </div>
+
+    <div class="footer__legal">
+      <p>© <span data-year>2026</span> PESU Home LLC, Dubai. All rights reserved.</p>
+      <ul>
+        <li><a href="#">Terms</a></li>
+        <li><a href="#">Privacy</a></li>
+        <li><a href="#">Shipping &amp; returns</a></li>
+        <li>
+          <span class="currency">
+            <label class="visually-hidden" for="currency-footer">Currency</label>
+            <select id="currency-footer" data-currency-select></select>
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/store.js"></script>
+<script src="assets/js/catalog.js"></script>
+<script src="assets/js/art.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/home.js"></script>
+</body>
+</html>
