@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cash Flow Control Dashboard</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f6f8; --card:#ffffff; --ink:#1b1f24; --muted:#66727f; --faint:#8b96a3;
+  --line:#e2e7ec; --line-strong:#cfd6de;
+  --accent:#1f4e79; --accent-soft:#eaf1f8;
+  --ok:#0f6b45; --ok-bg:#e8f5ee; --ok-line:#b7dfc9;
+  --warn:#8a5a00; --warn-bg:#fdf3e2; --warn-line:#f0d9a8;
+  --bad:#b02a20; --bad-bg:#fdecea; --bad-line:#f3c3bd;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --radius:10px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}   /* author rules such as .banner{display:flex} otherwise win */
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:600}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.brand{flex:1 1 260px;min-width:0}
+.brand h1{font-size:20px;letter-spacing:-.01em;overflow-wrap:anywhere}
+.brand .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.topbtns{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{background:#fff;border:1px solid var(--line-strong);color:var(--ink);
+  padding:8px 13px;border-radius:8px;box-shadow:var(--shadow);white-space:nowrap}
+.btn:hover{background:#f8fafc;border-color:#b9c3ce}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#1a4269}
+.btn.danger{color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)}
+.btn.danger:hover{background:#fbdedb}
+.btn.solid-danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.solid-danger:hover{background:#95231a}
+.btn.sm{padding:5px 9px;font-size:12.5px;box-shadow:none}
+.btn.link{background:none;border:none;box-shadow:none;color:var(--accent);
+  text-decoration:underline;padding:4px 2px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* ---------- summary cards ---------- */
+.cards{display:grid;gap:12px;grid-template-columns:repeat(4,1fr);margin-bottom:8px}
+@media(max-width:980px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.cards{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 15px;box-shadow:var(--shadow);min-width:0}
+.card .label{font-size:12px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em;font-weight:600;display:flex;align-items:center;gap:6px}
+.card .value{font-size:26px;font-weight:650;margin-top:8px;letter-spacing:-.02em;
+  overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.card .note{font-size:12px;color:var(--faint);margin-top:6px;min-height:16px}
+.card.minus .value{color:#7a2f28}
+.card.plus .value{color:var(--ok)}
+.card.headline{grid-column:span 1;border-width:2px}
+.card.headline .value{font-size:30px}
+.card.headline.state-ok{border-color:var(--ok-line);background:var(--ok-bg)}
+.card.headline.state-ok .value{color:var(--ok)}
+.card.headline.state-warn{border-color:var(--warn-line);background:var(--warn-bg)}
+.card.headline.state-warn .value{color:var(--warn)}
+.card.headline.state-bad{border-color:var(--bad-line);background:var(--bad-bg)}
+.card.headline.state-bad .value{color:var(--bad)}
+.formula{color:var(--faint);font-size:12px;margin:2px 0 16px;overflow-wrap:anywhere}
+
+/* ---------- panels ---------- */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);margin-bottom:14px}
+.panel-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:12px 15px;border-bottom:1px solid var(--line)}
+.panel-head h2{font-size:14.5px}
+.panel-head .spacer{flex:1}
+.panel-body{padding:13px 15px}
+
+.switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.track{width:38px;height:21px;border-radius:11px;background:#c8d0d9;position:relative;
+  transition:background .15s;flex:none}
+.track::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked + .track{background:var(--accent)}
+.switch input:checked + .track::after{transform:translateX(17px)}
+.switch input:focus-visible + .track{outline:2px solid var(--accent);outline-offset:2px}
+
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label,.lbl{font-size:12.5px;color:var(--muted);font-weight:600}
+.field .hint{font-size:11.5px;color:var(--faint);font-weight:400}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  padding:8px 10px;border:1px solid var(--line-strong);border-radius:7px;background:#fff;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.grid2{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+.grid3{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
+@media(max-width:620px){.grid2,.grid3{grid-template-columns:1fr}}
+.inline-opts{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+
+/* ---------- filters + table ---------- */
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:#fff;border:1px solid var(--line-strong);border-radius:999px;
+  padding:5px 12px;font-size:12.5px;color:var(--muted)}
+.chip[aria-pressed=true]{background:var(--accent-soft);border-color:#9dbcd8;
+  color:var(--accent);font-weight:600}
+.search{max-width:230px}
+
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+  background:#fafbfc;white-space:nowrap;position:sticky;top:0;z-index:1}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+th .arrow{opacity:.45;font-size:10px}
+th[aria-sort] .arrow{opacity:1}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover{background:#fafcfe}
+tr.done td{color:var(--muted)}
+.party{font-weight:600}
+.detail{color:var(--muted);font-size:12.5px;margin-top:2px;overflow-wrap:anywhere}
+.rowacts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.empty{padding:34px 16px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);margin-bottom:4px}
+
+.tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;
+  font-weight:600;white-space:nowrap;border:1px solid}
+.tag.uncleared{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+.tag.approved{background:var(--accent-soft);color:var(--accent);border-color:#9dbcd8}
+.tag.incoming{background:#eef0fd;color:#3b3f95;border-color:#c3c8f2}
+.tag.cleared{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-line)}
+.tag.overdue{background:var(--bad-bg);color:var(--bad);border-color:var(--bad-line)}
+.tfoot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:11px 15px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(20,26,33,.55);display:flex;
+  align-items:flex-start;justify-content:center;padding:24px 14px;overflow-y:auto;z-index:50}
+.overlay[hidden]{display:none}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:560px;
+  box-shadow:0 12px 40px rgba(16,24,40,.28);margin:auto}
+.modal.wide{max-width:900px}
+.modal-head{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.modal-head h2{font-size:16px;flex:1}
+.modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.modal-foot{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;
+  padding:13px 18px;border-top:1px solid var(--line);background:#fafbfc;border-radius:0 0 12px 12px}
+.modal-foot .spacer{flex:1}
+.x{background:none;border:none;font-size:21px;line-height:1;color:var(--muted);padding:2px 6px;border-radius:6px}
+.x:hover{background:#eef1f4;color:var(--ink)}
+
+.note-box{border:1px solid var(--line);background:#fafbfc;border-radius:8px;
+  padding:11px 13px;font-size:13px;color:var(--muted)}
+.note-box.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
+.note-box.bad{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad)}
+.note-box.ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
+.steps{display:flex;gap:7px;flex-wrap:wrap;font-size:12px;color:var(--faint)}
+.steps span[aria-current=step]{color:var(--accent);font-weight:700}
+.preview{overflow:auto;max-height:270px;border:1px solid var(--line);border-radius:8px}
+.preview table{font-size:12.5px}
+.preview th,.preview td{padding:6px 9px;white-space:nowrap}
+.preview td.bad{background:var(--bad-bg);color:var(--bad)}
+.mapgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.sheetrow{display:flex;gap:11px;align-items:center;flex-wrap:wrap;
+  padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+.sheetrow .nm{font-weight:600;flex:1;min-width:120px;overflow-wrap:anywhere}
+.sheetrow .meta{color:var(--faint);font-size:12px}
+.filedrop{border:2px dashed var(--line-strong);border-radius:10px;padding:26px 16px;
+  text-align:center;color:var(--muted);background:#fafbfc}
+.filedrop.over{border-color:var(--accent);background:var(--accent-soft)}
+.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;
+  border-radius:8px;margin-bottom:13px;font-size:13px}
+.banner.bad{background:var(--bad-bg);border:1px solid var(--bad-line);color:var(--bad)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b1f24;
+  color:#fff;padding:10px 18px;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.3);
+  z-index:80;max-width:90vw;text-align:center}
+.toast[hidden]{display:none}
+@media print{
+  .topbtns,.rowacts,.chips,.search,.btn,.panel-head .spacer{display:none!important}
+  body{background:#fff}.card,.panel{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="storageWarn" class="banner bad" hidden>
+    <span>This browser is not saving data on this device (private mode or blocked storage).
+    Your work stays only until you close the tab &mdash; use <b>Export</b> before you finish.</span>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <h1 id="companyName">My Company</h1>
+      <div class="sub">Cash Flow Control &mdash; true available cash, not just the bank balance</div>
+    </div>
+    <div class="topbtns">
+      <button class="btn primary" id="btnAdd">+ Add entry</button>
+      <button class="btn" id="btnUpload">Upload Excel / CSV</button>
+      <button class="btn" id="btnBalance">Update bank balance</button>
+      <button class="btn" id="btnExport">Export</button>
+      <button class="btn" id="btnImport">Import</button>
+      <button class="btn" id="btnSettings">Settings</button>
+    </div>
+  </header>
+
+  <section class="cards" aria-label="Cash position summary">
+    <div class="card">
+      <div class="label">Actual bank balance</div>
+      <div class="value" id="cBank">&mdash;</div>
+      <div class="note" id="cBankNote">Not set yet</div>
+    </div>
+    <div class="card minus">
+      <div class="label">Issued, not yet cleared</div>
+      <div class="value" id="cIssued">&mdash;</div>
+      <div class="note" id="cIssuedNote">&nbsp;</div>
+    </div>
+    <div class="card minus">
+      <div class="label">Approved, not yet released</div>
+      <div class="value" id="cApproved">&mdash;</div>
+      <div class="note" id="cApprovedNote">&nbsp;</div>
+    </div>
+    <div class="card headline" id="cProjCard">
+      <div class="label">Projected available balance</div>
+      <div class="value" id="cProjected">&mdash;</div>
+      <div class="note" id="cProjNote">&nbsp;</div>
+    </div>
+  </section>
+  <p class="formula" id="formulaLine"></p>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Expected incoming collections</h2>
+      <span class="spacer"></span>
+      <label class="switch">
+        <input type="checkbox" id="incToggle">
+        <span class="track"></span>
+        <span>Count in projected balance</span>
+      </label>
+    </div>
+    <div class="panel-body grid3" id="incOptions">
+      <div class="field">
+        <label for="incMode">How much to count</label>
+        <select id="incMode">
+          <option value="all">Full amount of every collection</option>
+          <option value="weighted">Weighted by confidence (high 100%, medium 60%, low 30%)</option>
+          <option value="high">Only collections marked high confidence</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="incHorizon">Only collections due within</label>
+        <select id="incHorizon">
+          <option value="0">Any date</option>
+          <option value="7">Next 7 days</option>
+          <option value="30">Next 30 days</option>
+          <option value="60">Next 60 days</option>
+          <option value="90">Next 90 days</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="lbl">Counted right now</span>
+        <div id="incSummary" style="padding-top:7px;font-weight:600"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>All entries</h2>
+      <div class="chips" id="filterChips" role="group" aria-label="Filter entries">
+        <button class="chip" data-filter="open" aria-pressed="true">Outstanding</button>
+        <button class="chip" data-filter="issued" aria-pressed="false">Issued</button>
+        <button class="chip" data-filter="approved" aria-pressed="false">Approved</button>
+        <button class="chip" data-filter="incoming" aria-pressed="false">Incoming</button>
+        <button class="chip" data-filter="done" aria-pressed="false">Completed</button>
+        <button class="chip" data-filter="all" aria-pressed="false">Everything</button>
+      </div>
+      <span class="spacer"></span>
+      <input type="text" class="search" id="searchBox" placeholder="Search name or reference" aria-label="Search entries">
+    </div>
+    <div class="tablewrap" id="tableWrap">
+      <table id="itemsTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="date">Date <span class="arrow">&#9660;</span></th>
+            <th class="sortable" data-sort="kind">Type <span class="arrow">&#9660;</span></th>
+            <th class="sortable" data-sort="party">Name <span class="arrow">&#9660;</span></th>
+            <th class="sortable num" data-sort="amount">Amount <span class="arrow">&#9660;</span></th>
+            <th class="sortable" data-sort="status">Status <span class="arrow">&#9660;</span></th>
+            <th style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState" hidden></div>
+    <div class="tfoot">
+      <span id="rowCount"></span>
+      <span id="rowTotal"></span>
+    </div>
+  </section>
+
+  <p style="color:var(--faint);font-size:12px;text-align:center">
+    Everything is stored in this browser on this device only. Nothing is sent anywhere.
+    <button class="btn link" id="btnReset">Reset / clear all data</button>
+  </p>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden role="status"></div>
+<input type="file" id="hiddenFile" hidden>
+
+<script>
+"use strict";
+/* ===== SHEETLIB-START =====================================================
+   Self-contained spreadsheet reader: raw-DEFLATE inflate, ZIP directory
+   reader, SheetML (.xlsx) parser and a CSV parser. No external libraries,
+   no network. Exposed as window.SheetLib -> { readWorkbook(arrayBuffer,name) }
+   returning { sheets:[{name, rows:[[cell,...]]}] } where cells are strings,
+   numbers, or {d:"YYYY-MM-DD"} for date-formatted cells.
+   ========================================================================= */
+var SheetLib = (function () {
+
+  /* ---------- raw DEFLATE (RFC 1951) ---------- */
+  var LBASE = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  var LEXT  = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  var DBASE = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,
+               4097,6145,8193,12289,16385,24577];
+  var DEXT  = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  var CLORDER = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+
+  function huff(lengths) {
+    var i, MAX = 15, count = new Int32Array(MAX + 1);
+    for (i = 0; i < lengths.length; i++) count[lengths[i]]++;
+    count[0] = 0;
+    var offs = new Int32Array(MAX + 2);
+    for (i = 1; i <= MAX; i++) offs[i + 1] = offs[i] + count[i];
+    var symbol = new Int32Array(lengths.length);
+    for (i = 0; i < lengths.length; i++) if (lengths[i]) symbol[offs[lengths[i]]++] = i;
+    return { count: count, symbol: symbol };
+  }
+
+  var FIXL = null, FIXD = null;
+  function fixedTables() {
+    if (FIXL) return;
+    var l = new Uint8Array(288), i;
+    for (i = 0; i < 144; i++) l[i] = 8;
+    for (; i < 256; i++) l[i] = 9;
+    for (; i < 280; i++) l[i] = 7;
+    for (; i < 288; i++) l[i] = 8;
+    FIXL = huff(l);
+    var d = new Uint8Array(30);
+    for (i = 0; i < 30; i++) d[i] = 5;
+    FIXD = huff(d);
+  }
+
+  function inflateRaw(src, hint) {
+    var pos = 0, buf = 0, cnt = 0;
+    var out = new Uint8Array(Math.max(1024, hint || src.length * 5)), len = 0;
+
+    function grow(n) {
+      if (len + n <= out.length) return;
+      var cap = out.length;
+      while (cap < len + n) cap *= 2;
+      var nb = new Uint8Array(cap); nb.set(out.subarray(0, len)); out = nb;
+    }
+    function bits(n) {
+      while (cnt < n) {
+        if (pos >= src.length) throw new Error("Compressed data ended unexpectedly");
+        buf |= src[pos++] << cnt; cnt += 8;
+      }
+      var v = buf & ((1 << n) - 1);
+      buf >>>= n; cnt -= n;
+      return v;
+    }
+    function decode(t) {
+      var code = 0, first = 0, index = 0, l, c;
+      for (l = 1; l <= 15; l++) {
+        code |= bits(1);
+        c = t.count[l];
+        if (code - first < c) return t.symbol[index + (code - first)];
+        index += c; first = (first + c) << 1; code <<= 1;
+      }
+      throw new Error("Bad compressed code");
+    }
+    function block(lt, dt) {
+      for (;;) {
+        var sym = decode(lt);
+        if (sym < 256) { grow(1); out[len++] = sym; }
+        else if (sym === 256) return;
+        else {
+          sym -= 257;
+          if (sym >= 29) throw new Error("Bad length code");
+          var l = LBASE[sym] + bits(LEXT[sym]);
+          var ds = decode(dt);
+          if (ds >= 30) throw new Error("Bad distance code");
+          var dist = DBASE[ds] + bits(DEXT[ds]);
+          if (dist > len) throw new Error("Distance too far back");
+          grow(l);
+          var from = len - dist;
+          for (var i = 0; i < l; i++) out[len++] = out[from + i];
+        }
+      }
+    }
+
+    for (;;) {
+      var last = bits(1), type = bits(2);
+      if (type === 0) {
+        pos -= cnt >> 3; buf = 0; cnt = 0;           /* align to byte boundary */
+        if (pos + 4 > src.length) throw new Error("Truncated stored block");
+        var n = src[pos] | (src[pos + 1] << 8);
+        pos += 4;
+        grow(n);
+        out.set(src.subarray(pos, pos + n), len);
+        len += n; pos += n;
+      } else if (type === 1) {
+        fixedTables(); block(FIXL, FIXD);
+      } else if (type === 2) {
+        var nlen = bits(5) + 257, ndist = bits(5) + 1, ncode = bits(4) + 4, i;
+        var cl = new Uint8Array(19);
+        for (i = 0; i < ncode; i++) cl[CLORDER[i]] = bits(3);
+        var clt = huff(cl), lengths = new Uint8Array(nlen + ndist), idx = 0;
+        while (idx < nlen + ndist) {
+          var s = decode(clt), rep, val = 0;
+          if (s < 16) { lengths[idx++] = s; continue; }
+          if (s === 16) {
+            if (idx === 0) throw new Error("No length to repeat");
+            val = lengths[idx - 1]; rep = 3 + bits(2);
+          } else if (s === 17) { rep = 3 + bits(3); }
+          else { rep = 11 + bits(7); }
+          while (rep-- > 0) lengths[idx++] = val;
+        }
+        block(huff(lengths.subarray(0, nlen)), huff(lengths.subarray(nlen)));
+      } else throw new Error("Unsupported compression block");
+      if (last) break;
+    }
+    return out.subarray(0, len);
+  }
+
+  /* ---------- ZIP container ---------- */
+  function readZip(arrayBuffer) {
+    var b = new Uint8Array(arrayBuffer), dv = new DataView(arrayBuffer);
+    var i, eocd = -1, min = Math.max(0, b.length - 66000);
+    for (i = b.length - 22; i >= min; i--) {
+      if (b[i] === 0x50 && b[i + 1] === 0x4b && b[i + 2] === 0x05 && b[i + 3] === 0x06) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error("This does not look like an .xlsx file (no zip directory found).");
+    var count = dv.getUint16(eocd + 10, true), cdOff = dv.getUint32(eocd + 16, true);
+    if (cdOff === 0xffffffff) throw new Error("This .xlsx uses ZIP64 and is too large to read here. Please save it as CSV instead.");
+    var files = {}, p = cdOff;
+    for (i = 0; i < count; i++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      var method = dv.getUint16(p + 10, true);
+      var csize  = dv.getUint32(p + 20, true);
+      var usize  = dv.getUint32(p + 24, true);
+      var nlen   = dv.getUint16(p + 28, true);
+      var elen   = dv.getUint16(p + 30, true);
+      var clen   = dv.getUint16(p + 32, true);
+      var lho    = dv.getUint32(p + 42, true);
+      var name   = utf8(b.subarray(p + 46, p + 46 + nlen));
+      files[name] = { method: method, csize: csize, usize: usize, lho: lho };
+      p += 46 + nlen + elen + clen;
+    }
+    return {
+      names: Object.keys(files),
+      has: function (n) { return !!files[n]; },
+      text: function (n) {
+        var f = files[n];
+        if (!f) return null;
+        if (dv.getUint32(f.lho, true) !== 0x04034b50) throw new Error("Damaged .xlsx file");
+        var nl = dv.getUint16(f.lho + 26, true), el = dv.getUint16(f.lho + 28, true);
+        var start = f.lho + 30 + nl + el;
+        var raw = b.subarray(start, start + f.csize);
+        if (f.method === 0) return utf8(raw);
+        if (f.method === 8) return utf8(inflateRaw(raw, f.usize || undefined));
+        throw new Error("Unsupported compression inside the .xlsx file");
+      }
+    };
+  }
+
+  function utf8(bytes) {
+    if (typeof TextDecoder !== "undefined") return new TextDecoder("utf-8").decode(bytes);
+    var s = "", i = 0, c, c2, c3;
+    while (i < bytes.length) {
+      c = bytes[i++];
+      if (c < 128) s += String.fromCharCode(c);
+      else if (c < 224) { c2 = bytes[i++]; s += String.fromCharCode(((c & 31) << 6) | (c2 & 63)); }
+      else if (c < 240) { c2 = bytes[i++]; c3 = bytes[i++];
+        s += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63)); }
+      else { var c4 = bytes[i + 2], cp = ((c & 7) << 18) | ((bytes[i] & 63) << 12) | ((bytes[i + 1] & 63) << 6) | (c4 & 63);
+        i += 3; cp -= 0x10000;
+        s += String.fromCharCode(0xd800 + (cp >> 10), 0xdc00 + (cp & 1023)); }
+    }
+    return s;
+  }
+
+  /* ---------- XML helpers ---------- */
+  var ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+  function unesc(s) {
+    if (s.indexOf("&") < 0) return s;
+    return s.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, function (m, e) {
+      if (e.charAt(0) === "#") {
+        var n = e.charAt(1) === "x" || e.charAt(1) === "X"
+          ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+        return isNaN(n) ? m : String.fromCharCode(n);
+      }
+      return ENT[e] !== undefined ? ENT[e] : m;
+    });
+  }
+  function attr(tag, name) {
+    var m = new RegExp("\\s" + name + '\\s*=\\s*"([^"]*)"').exec(tag);
+    if (m) return unesc(m[1]);
+    m = new RegExp("\\s" + name + "\\s*=\\s*'([^']*)'").exec(tag);
+    return m ? unesc(m[1]) : null;
+  }
+  /* concatenate every <t>..</t> inside a fragment (rich-text runs included) */
+  function textOf(frag) {
+    var out = "", re = /<t\b[^>]*?(\/>|>([\s\S]*?)<\/t>)/g, m;
+    while ((m = re.exec(frag))) out += m[1] === "/>" ? "" : unesc(m[2]);
+    return out;
+  }
+
+  /* ---------- dates ---------- */
+  var BUILTIN_DATE = {};
+  [14,15,16,17,18,19,20,21,22,27,28,29,30,31,32,33,34,35,36,45,46,47,50,51,52,53,54,
+   55,56,57,58].forEach(function (n) { BUILTIN_DATE[n] = true; });
+
+  function fmtIsDate(code) {
+    if (!code) return false;
+    var s = code.replace(/\[[^\]]*\]/g, "").replace(/"[^"]*"/g, "").replace(/\\./g, "");
+    if (/(^|[^a-z])(red|black|blue|green)($|[^a-z])/i.test(s)) s = s.replace(/[a-z]+/gi, "");
+    return /[ymdhs]/i.test(s) && !/^[#0.,%eE\s;+\-()]*$/.test(s);
+  }
+  function serialToISO(n, epoch1904) {
+    if (epoch1904) n += 1462;
+    var days = n > 59 ? n - 25569 : n - 25568;
+    var d = new Date(Math.round(days * 86400000));
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 10);
+  }
+
+  /* ---------- .xlsx ---------- */
+  function colIndex(ref) {
+    var n = 0, i = 0;
+    for (; i < ref.length; i++) {
+      var c = ref.charCodeAt(i);
+      if (c >= 65 && c <= 90) n = n * 26 + (c - 64);
+      else if (c >= 97 && c <= 122) n = n * 26 + (c - 96);
+      else break;
+    }
+    return n - 1;
+  }
+
+  function readXlsx(arrayBuffer) {
+    var zip = readZip(arrayBuffer);
+
+    /* shared strings */
+    var shared = [], ssXml = zip.has("xl/sharedStrings.xml") ? zip.text("xl/sharedStrings.xml") : null;
+    if (ssXml) {
+      var sre = /<si\b[^>]*?(\/>|>([\s\S]*?)<\/si>)/g, sm;
+      while ((sm = sre.exec(ssXml))) shared.push(sm[1] === "/>" ? "" : textOf(sm[2]));
+    }
+
+    /* number formats -> which style indexes are dates */
+    var isDateStyle = [];
+    if (zip.has("xl/styles.xml")) {
+      var st = zip.text("xl/styles.xml"), custom = {}, m;
+      var nre = /<numFmt\b[^>]*\/>/g;
+      while ((m = nre.exec(st))) {
+        var id = attr(m[0], "numFmtId"), code = attr(m[0], "formatCode");
+        if (id !== null) custom[id] = code || "";
+      }
+      var xfBlock = /<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/.exec(st);
+      if (xfBlock) {
+        var xre = /<xf\b[^>]*?(\/>|>[\s\S]*?<\/xf>)/g, xm;
+        while ((xm = xre.exec(xfBlock[1]))) {
+          var fid = attr(xm[0], "numFmtId");
+          var num = fid === null ? 0 : parseInt(fid, 10);
+          isDateStyle.push(custom[fid] !== undefined ? fmtIsDate(custom[fid]) : !!BUILTIN_DATE[num]);
+        }
+      }
+    }
+
+    /* 1904 date system? */
+    var wbXml = zip.has("xl/workbook.xml") ? zip.text("xl/workbook.xml") : "";
+    var epoch1904 = /date1904\s*=\s*"(1|true)"/i.test(wbXml);
+
+    /* sheet name -> part path, via relationships */
+    var rels = {}, relXml = zip.has("xl/_rels/workbook.xml.rels") ? zip.text("xl/_rels/workbook.xml.rels") : "";
+    var rre = /<Relationship\b[^>]*\/>/g, rm;
+    while ((rm = rre.exec(relXml))) {
+      var rid = attr(rm[0], "Id"), tgt = attr(rm[0], "Target");
+      if (rid && tgt) rels[rid] = tgt.replace(/^\/?(xl\/)?/, "xl/");
+    }
+
+    var sheets = [], sre2 = /<sheet\b[^>]*\/>/g, sm2, seq = 0;
+    while ((sm2 = sre2.exec(wbXml))) {
+      seq++;
+      var nm = attr(sm2[0], "name") || ("Sheet" + seq);
+      var rid2 = attr(sm2[0], "r:id") || attr(sm2[0], "id");
+      var path = (rid2 && rels[rid2]) || ("xl/worksheets/sheet" + seq + ".xml");
+      var state = attr(sm2[0], "state");
+      if (state === "hidden" || state === "veryHidden") continue;
+      if (!zip.has(path)) continue;
+      sheets.push({ name: nm, rows: parseSheet(zip.text(path), shared, isDateStyle, epoch1904) });
+    }
+    if (!sheets.length) throw new Error("No readable sheets were found in this file.");
+    return { sheets: sheets };
+  }
+
+  function parseSheet(xml, shared, isDateStyle, epoch1904) {
+    var rows = [], maxCol = 0;
+    var rowRe = /<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g, rm;
+    var autoRow = 0;
+    while ((rm = rowRe.exec(xml))) {
+      var rAttr = attr("<row " + rm[1] + ">", "r");
+      var rIdx = rAttr ? parseInt(rAttr, 10) - 1 : autoRow;
+      autoRow = rIdx + 1;
+      var body = rm[2] || "", cells = [];
+      var cRe = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g, cm, autoCol = 0;
+      while ((cm = cRe.exec(body))) {
+        var aTag = "<c " + cm[1] + ">", inner = cm[2] || "";
+        var ref = attr(aTag, "r");
+        var ci = ref ? colIndex(ref) : autoCol;
+        autoCol = ci + 1;
+        var t = attr(aTag, "t"), sIdx = attr(aTag, "s");
+        var val = null, vm = /<v\b[^>]*>([\s\S]*?)<\/v>/.exec(inner);
+
+        if (t === "s") {
+          if (vm) { var si = parseInt(vm[1], 10); val = shared[si] !== undefined ? shared[si] : ""; }
+        } else if (t === "inlineStr") {
+          val = textOf(inner);
+        } else if (t === "str") {
+          val = vm ? unesc(vm[1]) : "";
+        } else if (t === "b") {
+          val = vm ? (vm[1] === "1" ? "TRUE" : "FALSE") : "";
+        } else if (t === "e") {
+          val = "";
+        } else if (t === "d") {
+          val = vm ? { d: String(vm[1]).slice(0, 10) } : null;
+        } else if (vm) {
+          var num = parseFloat(vm[1]);
+          if (isNaN(num)) val = unesc(vm[1]);
+          else {
+            var styled = sIdx !== null && isDateStyle[parseInt(sIdx, 10)];
+            if (styled && num > 0 && num < 2958466) {
+              var iso = serialToISO(num, epoch1904);
+              val = iso ? { d: iso } : num;
+            } else val = num;
+          }
+        }
+        if (val !== null && val !== "") { cells[ci] = val; if (ci + 1 > maxCol) maxCol = ci + 1; }
+      }
+      if (cells.length) rows[rIdx] = cells;
+    }
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i] || [];
+      var norm = [];
+      for (var j = 0; j < maxCol; j++) norm.push(r[j] === undefined ? "" : r[j]);
+      out.push(norm);
+    }
+    while (out.length && out[out.length - 1].every(function (c) { return c === ""; })) out.pop();
+    return out;
+  }
+
+  /* ---------- CSV / TSV ---------- */
+  function readCsv(text) {
+    if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+    var head = text.slice(0, 5000).split(/\r?\n/).slice(0, 8).join("\n");
+    var best = ",", bestN = -1;
+    [",", ";", "\t", "|"].forEach(function (d) {
+      var n = head.split(d).length - 1;
+      if (n > bestN) { bestN = n; best = d; }
+    });
+    var rows = [], row = [], cur = "", q = false, i = 0, maxCol = 0;
+    function endCell() { row.push(cur); cur = ""; }
+    function endRow() { endCell(); if (row.length > maxCol) maxCol = row.length; rows.push(row); row = []; }
+    while (i < text.length) {
+      var ch = text.charAt(i);
+      if (q) {
+        if (ch === '"') {
+          if (text.charAt(i + 1) === '"') { cur += '"'; i += 2; continue; }
+          q = false; i++; continue;
+        }
+        cur += ch; i++; continue;
+      }
+      if (ch === '"' && cur === "") { q = true; i++; continue; }
+      if (ch === best) { endCell(); i++; continue; }
+      if (ch === "\r") { i++; continue; }
+      if (ch === "\n") { endRow(); i++; continue; }
+      cur += ch; i++;
+    }
+    if (cur !== "" || row.length) endRow();
+    var out = rows.map(function (r) {
+      var n = [];
+      for (var j = 0; j < maxCol; j++) {
+        var v = r[j] === undefined ? "" : String(r[j]).trim();
+        n.push(v);
+      }
+      return n;
+    });
+    while (out.length && out[out.length - 1].every(function (c) { return c === ""; })) out.pop();
+    return { sheets: [{ name: "Sheet1", rows: out }] };
+  }
+
+  function readWorkbook(data, filename) {
+    var isCsv = /\.(csv|txt|tsv)$/i.test(filename || "");
+    if (!isCsv && data instanceof ArrayBuffer) {
+      var sig = new Uint8Array(data, 0, Math.min(4, data.byteLength));
+      if (sig[0] === 0x50 && sig[1] === 0x4b) return readXlsx(data);
+      if (sig[0] === 0xd0 && sig[1] === 0xcf) {
+        throw new Error("This is an old .xls file. Please open it in Excel and use “Save As” to make it .xlsx or .csv, then upload again.");
+      }
+      return readCsv(utf8(new Uint8Array(data)));
+    }
+    return readCsv(typeof data === "string" ? data : utf8(new Uint8Array(data)));
+  }
+
+  return { readWorkbook: readWorkbook, readXlsx: readXlsx, readCsv: readCsv,
+           inflateRaw: inflateRaw, serialToISO: serialToISO, fmtIsDate: fmtIsDate };
+})();
+/* ===== SHEETLIB-END ===== */
+</script>
+
+<script>
+"use strict";
+/* ===== APP-START ========================================================= */
+var App = (function () {
+
+  var KEY = "cashflow.control.v1";
+  var KINDS = {
+    issued:   { label: "Issued",   tag: "uncleared", noun: "Cheque / payment issued" },
+    approved: { label: "Approved", tag: "approved",  noun: "Approved – not yet released" },
+    incoming: { label: "Incoming", tag: "incoming",  noun: "Expected incoming collection" }
+  };
+
+  var state = defaults();
+  var view = { filter: "open", sortKey: "date", sortDir: "desc", search: "" };
+  var storageOk = true;
+
+  function defaults() {
+    return {
+      companyName: "My Company",
+      currency: "₹",
+      grouping: "in",              /* "in" = 12,34,567.89   "intl" = 1,234,567.89 */
+      bankBalance: 0,
+      bankUpdatedAt: "",
+      warnThreshold: 0,
+      includeIncoming: false,
+      incomingMode: "weighted",
+      incomingHorizon: 0,
+      items: []
+    };
+  }
+
+  /* ---------------- utilities ---------------- */
+  function el(id) { return document.getElementById(id); }
+  function h(s) {
+    return String(s === null || s === undefined ? "" : s)
+      .replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+  }
+  function uid() {
+    return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+
+  function group(intStr) {
+    if (state.grouping === "in" && intStr.length > 3) {
+      var last3 = intStr.slice(-3), rest = intStr.slice(0, -3);
+      return rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + last3;
+    }
+    return intStr.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+  function money(n, opts) {
+    n = num(n);
+    var neg = n < 0, a = Math.abs(n).toFixed(2).split(".");
+    var s = group(a[0]) + "." + a[1];
+    var sym = (opts && opts.bare) ? "" : state.currency + " ";
+    return (neg ? "−" : "") + sym + s;
+  }
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (!m) return iso;
+    var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return Number(m[3]) + " " + MON[Number(m[2]) - 1] + " " + m[1];
+  }
+  function todayISO() {
+    var d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+  function stamp() {
+    var d = new Date();
+    return fmtDate(todayISO()) + ", " +
+      String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  function daysBetween(iso) {
+    if (!iso) return null;
+    var a = new Date(iso + "T00:00:00"), b = new Date(todayISO() + "T00:00:00");
+    return Math.round((a - b) / 86400000);
+  }
+
+  /* ---------------- persistence ---------------- */
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+      if (!storageOk) { storageOk = true; el("storageWarn").hidden = true; }
+    } catch (e) {
+      storageOk = false;
+      el("storageWarn").hidden = false;
+    }
+  }
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); }
+    catch (e) { storageOk = false; el("storageWarn").hidden = false; return; }
+    if (!raw) return;
+    try {
+      var d = JSON.parse(raw);
+      if (d && typeof d === "object") state = migrate(d);
+    } catch (e) { /* corrupt data: start clean rather than break */ }
+  }
+  function migrate(d) {
+    var base = defaults();
+    Object.keys(base).forEach(function (k) { if (d[k] !== undefined) base[k] = d[k]; });
+    base.items = (Array.isArray(d.items) ? d.items : []).map(normalizeItem).filter(Boolean);
+    return base;
+  }
+  function normalizeItem(it) {
+    if (!it || !KINDS[it.kind]) return null;
+    return {
+      id: it.id || uid(),
+      kind: it.kind,
+      date: it.date || "",
+      party: String(it.party || ""),
+      amount: num(it.amount),
+      ref: String(it.ref || ""),
+      purpose: String(it.purpose || ""),
+      expected: it.expected || "",
+      confidence: it.confidence === "high" || it.confidence === "low" ? it.confidence : "medium",
+      status: it.status || (it.kind === "issued" ? "uncleared"
+                          : it.kind === "approved" ? "pending" : "expected"),
+      settledOn: it.settledOn || "",
+      createdAt: it.createdAt || new Date().toISOString()
+    };
+  }
+  function fingerprint(it) {
+    return [it.kind, it.date, it.party.trim().toLowerCase(),
+            num(it.amount).toFixed(2), String(it.ref).trim().toLowerCase()].join("|");
+  }
+
+  /* ---------------- calculations ---------------- */
+  function isOpen(it) {
+    return it.kind === "issued"   ? it.status === "uncleared"
+         : it.kind === "approved" ? it.status === "pending"
+         :                          it.status === "expected";
+  }
+  function incomingWeight(it) {
+    if (state.incomingMode === "all")  return 1;
+    if (state.incomingMode === "high") return it.confidence === "high" ? 1 : 0;
+    return it.confidence === "high" ? 1 : it.confidence === "low" ? 0.3 : 0.6;
+  }
+  function incomingCounts(it) {
+    if (it.kind !== "incoming" || it.status !== "expected") return false;
+    var hz = num(state.incomingHorizon);
+    if (hz > 0) {
+      var d = daysBetween(it.date);
+      if (d === null || d > hz) return false;
+    }
+    return incomingWeight(it) > 0;
+  }
+  function totals() {
+    var t = { issued: 0, issuedN: 0, approved: 0, approvedN: 0,
+              incoming: 0, incomingN: 0, incomingRaw: 0, overdue: 0 };
+    state.items.forEach(function (it) {
+      if (it.kind === "issued" && it.status === "uncleared") {
+        t.issued += num(it.amount); t.issuedN++;
+      } else if (it.kind === "approved" && it.status === "pending") {
+        t.approved += num(it.amount); t.approvedN++;
+        var d = daysBetween(it.expected || it.date);
+        if (d !== null && d < 0) t.overdue++;
+      } else if (incomingCounts(it)) {
+        t.incoming += num(it.amount) * incomingWeight(it);
+        t.incomingRaw += num(it.amount);
+        t.incomingN++;
+      }
+    });
+    t.bank = num(state.bankBalance);
+    t.projected = t.bank - t.issued - t.approved + (state.includeIncoming ? t.incoming : 0);
+    return t;
+  }
+
+  /* ---------------- rendering ---------------- */
+  function renderSummary() {
+    var t = totals();
+    el("companyName").textContent = state.companyName || "My Company";
+    document.title = (state.companyName || "My Company") + " — Cash Flow Control";
+
+    el("cBank").textContent = money(t.bank);
+    el("cBankNote").textContent = state.bankUpdatedAt
+      ? "Last updated " + state.bankUpdatedAt : "Not set yet — click “Update bank balance”";
+
+    el("cIssued").textContent = t.issued ? "− " + money(t.issued) : money(0);
+    el("cIssuedNote").textContent = t.issuedN
+      ? t.issuedN + (t.issuedN === 1 ? " cheque/payment" : " cheques/payments") + " not yet cleared"
+      : "Nothing outstanding";
+
+    el("cApproved").textContent = t.approved ? "− " + money(t.approved) : money(0);
+    el("cApprovedNote").textContent = t.approvedN
+      ? t.approvedN + (t.approvedN === 1 ? " payment" : " payments") + " waiting to be released"
+        + (t.overdue ? " · " + t.overdue + " past due" : "")
+      : "Nothing waiting";
+
+    var card = el("cProjCard"), warn = num(state.warnThreshold);
+    card.classList.remove("state-ok", "state-warn", "state-bad");
+    card.classList.add(t.projected < 0 ? "state-bad"
+                     : (warn > 0 && t.projected < warn) ? "state-warn" : "state-ok");
+    el("cProjected").textContent = money(t.projected);
+    el("cProjNote").textContent = t.projected < 0
+      ? "Shortfall — do not release more payments without arranging funds"
+      : (warn > 0 && t.projected < warn)
+        ? "Below your warning level of " + money(warn)
+        : "Safe to work with";
+
+    var f = "Bank " + money(t.bank) + "  −  issued " + money(t.issued) +
+            "  −  approved " + money(t.approved);
+    if (state.includeIncoming) f += "  +  expected collections " + money(t.incoming);
+    el("formulaLine").textContent = f + "  =  " + money(t.projected);
+
+    el("incToggle").checked = !!state.includeIncoming;
+    el("incMode").value = state.incomingMode;
+    el("incHorizon").value = String(state.incomingHorizon);
+    el("incOptions").style.opacity = state.includeIncoming ? "1" : ".55";
+    el("incMode").disabled = el("incHorizon").disabled = !state.includeIncoming;
+    el("incSummary").textContent = !state.includeIncoming
+      ? "Not counted — switch on above"
+      : t.incomingN
+      ? money(t.incoming) + " from " + t.incomingN + (t.incomingN === 1 ? " collection" : " collections")
+        + (state.incomingMode === "weighted" && t.incomingRaw !== t.incoming
+           ? " (of " + money(t.incomingRaw) + ")" : "")
+      : "Nothing counted";
+  }
+
+  function visibleItems() {
+    var q = view.search.trim().toLowerCase();
+    var list = state.items.filter(function (it) {
+      var open = isOpen(it);
+      if (view.filter === "open" && !open) return false;
+      if (view.filter === "done" && open) return false;
+      if (view.filter === "issued" && it.kind !== "issued") return false;
+      if (view.filter === "approved" && it.kind !== "approved") return false;
+      if (view.filter === "incoming" && it.kind !== "incoming") return false;
+      if (q) {
+        var hay = (it.party + " " + it.ref + " " + it.purpose).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    var dir = view.sortDir === "asc" ? 1 : -1, k = view.sortKey;
+    list.sort(function (a, b) {
+      var x, y;
+      if (k === "amount") { x = num(a.amount); y = num(b.amount); }
+      else if (k === "date") { x = a.date || ""; y = b.date || ""; }
+      else if (k === "kind") { x = a.kind; y = b.kind; }
+      else if (k === "status") { x = statusLabel(a); y = statusLabel(b); }
+      else { x = (a.party || "").toLowerCase(); y = (b.party || "").toLowerCase(); }
+      if (x < y) return -1 * dir;
+      if (x > y) return 1 * dir;
+      return (a.createdAt < b.createdAt ? -1 : 1) * dir;
+    });
+    return list;
+  }
+
+  function statusLabel(it) {
+    if (it.kind === "issued")   return it.status === "cleared" ? "Cleared" : "Uncleared";
+    if (it.kind === "approved") return it.status === "released" ? "Released" : "Not released";
+    return it.status === "received" ? "Received" : "Expected";
+  }
+  function statusClass(it) {
+    if (!isOpen(it)) return "cleared";
+    if (it.kind === "issued")   return "uncleared";
+    if (it.kind === "approved") return "approved";
+    return "incoming";
+  }
+
+  function renderTable() {
+    var list = visibleItems(), body = el("itemsBody"), rows = [];
+    if (!list.length) {
+      body.innerHTML = "";
+      el("tableWrap").hidden = true;
+      el("emptyState").hidden = false;
+      el("emptyState").innerHTML = "<strong>Nothing to show here</strong>" +
+        (state.items.length ? "Try another filter, or clear the search box."
+                            : "Add your first entry, or upload an Excel/CSV file.");
+    } else {
+      el("tableWrap").hidden = false;
+      el("emptyState").hidden = true;
+      list.forEach(function (it) {
+        var open = isOpen(it), due = it.kind === "approved" ? (it.expected || it.date) : it.date;
+        var late = open && it.kind !== "issued" && daysBetween(due) !== null && daysBetween(due) < 0;
+        var detail = [];
+        if (it.ref) detail.push("Ref " + it.ref);
+        if (it.purpose) detail.push(it.purpose);
+        if (it.kind === "approved" && it.expected) detail.push("release by " + fmtDate(it.expected));
+        if (it.kind === "incoming") detail.push(it.confidence + " confidence");
+        if (!open && it.settledOn) detail.push("on " + fmtDate(it.settledOn));
+
+        var acts = [];
+        if (open && it.kind === "issued")   acts.push(btn("clear", it.id, "Mark cleared"));
+        if (open && it.kind === "approved") acts.push(btn("release", it.id, "Mark released"));
+        if (open && it.kind === "incoming") acts.push(btn("receive", it.id, "Mark received"));
+        if (!open)                          acts.push(btn("reopen", it.id, "Undo"));
+        acts.push(btn("edit", it.id, "Edit"));
+        acts.push(btn("del", it.id, "Delete"));
+
+        rows.push(
+          '<tr class="' + (open ? "" : "done") + '">' +
+          "<td>" + h(fmtDate(it.date)) + "</td>" +
+          "<td>" + h(KINDS[it.kind].label) + "</td>" +
+          '<td><div class="party">' + h(it.party || "—") + "</div>" +
+            (detail.length ? '<div class="detail">' + h(detail.join(" · ")) + "</div>" : "") + "</td>" +
+          '<td class="num">' + h(money(it.amount)) + "</td>" +
+          '<td><span class="tag ' + (late ? "overdue" : statusClass(it)) + '">' +
+            h(statusLabel(it)) + (late ? " · overdue" : "") + "</span></td>" +
+          '<td><div class="rowacts">' + acts.join("") + "</div></td></tr>"
+        );
+      });
+      body.innerHTML = rows.join("");
+    }
+
+    var sum = list.reduce(function (a, it) { return a + num(it.amount); }, 0);
+    el("rowCount").textContent = list.length + (list.length === 1 ? " entry" : " entries") +
+      " shown of " + state.items.length;
+    el("rowTotal").textContent = list.length ? "Total shown: " + money(sum) : "";
+
+    Array.prototype.forEach.call(document.querySelectorAll("th.sortable"), function (th) {
+      if (th.dataset.sort === view.sortKey) {
+        th.setAttribute("aria-sort", view.sortDir === "asc" ? "ascending" : "descending");
+        th.querySelector(".arrow").innerHTML = view.sortDir === "asc" ? "&#9650;" : "&#9660;";
+      } else {
+        th.removeAttribute("aria-sort");
+        th.querySelector(".arrow").innerHTML = "&#9660;";
+      }
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#filterChips .chip"), function (c) {
+      c.setAttribute("aria-pressed", String(c.dataset.filter === view.filter));
+    });
+  }
+  function btn(act, id, label) {
+    return '<button class="btn sm" data-act="' + act + '" data-id="' + h(id) + '">' + h(label) + "</button>";
+  }
+  function render() { renderSummary(); renderTable(); }
+
+  /* ---------------- toast + modal ---------------- */
+  var toastTimer = null;
+  function toast(msg) {
+    var t = el("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+  function openModal(html, opts) {
+    var m = el("modal");
+    m.className = "modal" + (opts && opts.wide ? " wide" : "");
+    m.innerHTML = html;
+    el("overlay").hidden = false;
+    var first = m.querySelector("input:not([type=hidden]),select,textarea,button.primary");
+    if (first) try { first.focus(); } catch (e) {}
+  }
+  function closeModal() { el("overlay").hidden = true; el("modal").innerHTML = ""; }
+
+  function modalShell(title, bodyHtml, footHtml, opts) {
+    return '<div class="modal-head"><h2>' + h(title) + '</h2>' +
+           '<button class="x" data-close="1" aria-label="Close">&times;</button></div>' +
+           '<div class="modal-body">' + bodyHtml + "</div>" +
+           '<div class="modal-foot">' + footHtml + "</div>";
+  }
+
+  /* ---------------- add / edit entry ---------------- */
+  function entryModal(id) {
+    var it = id ? state.items.filter(function (x) { return x.id === id; })[0] : null;
+    var k = it ? it.kind : "issued";
+    var body =
+      '<div class="field"><label for="fKind">What is this entry?</label>' +
+        '<select id="fKind"' + (it ? " disabled" : "") + ">" +
+          Object.keys(KINDS).map(function (key) {
+            return '<option value="' + key + '"' + (key === k ? " selected" : "") + ">" +
+                   h(KINDS[key].noun) + "</option>";
+          }).join("") + "</select>" +
+        (it ? '<span class="hint">Use the buttons in the list to change an entry&rsquo;s status.</span>' : "") +
+      "</div>" +
+      '<div class="grid2">' +
+        '<div class="field"><label for="fDate" id="lblDate">Date</label>' +
+          '<input type="date" id="fDate" value="' + h(it ? it.date : todayISO()) + '"></div>' +
+        '<div class="field"><label for="fAmount">Amount</label>' +
+          '<input type="text" id="fAmount" inputmode="decimal" placeholder="0.00" value="' +
+          h(it ? String(it.amount) : "") + '"></div>' +
+      "</div>" +
+      '<div class="field"><label for="fParty" id="lblParty">Payee</label>' +
+        '<input type="text" id="fParty" value="' + h(it ? it.party : "") + '" placeholder="Who is being paid"></div>' +
+      '<div class="field" id="wrapRef"><label for="fRef">Cheque / reference number</label>' +
+        '<input type="text" id="fRef" value="' + h(it ? it.ref : "") + '" placeholder="e.g. CHQ-00123 or UTR"></div>' +
+      '<div class="field" id="wrapPurpose"><label for="fPurpose">Purpose / notes</label>' +
+        '<input type="text" id="fPurpose" value="' + h(it ? it.purpose : "") + '" placeholder="What this payment is for"></div>' +
+      '<div class="field" id="wrapExpected"><label for="fExpected">Expected release date</label>' +
+        '<input type="date" id="fExpected" value="' + h(it ? it.expected : "") + '"></div>' +
+      '<div class="field" id="wrapConf"><label for="fConf">How confident are you of receiving this?</label>' +
+        '<select id="fConf">' +
+          ["high", "medium", "low"].map(function (c) {
+            return '<option value="' + c + '"' + (it && it.confidence === c ? " selected" : "") + ">" +
+              c.charAt(0).toUpperCase() + c.slice(1) + "</option>";
+          }).join("") + "</select></div>" +
+      '<div class="note-box bad" id="fError" hidden></div>';
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+               '<button class="btn primary" id="fSave">' + (it ? "Save changes" : "Add entry") + "</button>";
+    openModal(modalShell(it ? "Edit entry" : "Add entry", body, foot));
+
+    function sync() {
+      var kind = el("fKind").value;
+      el("wrapRef").hidden = kind === "incoming";
+      el("wrapExpected").hidden = kind !== "approved";
+      el("wrapConf").hidden = kind !== "incoming";
+      el("lblParty").textContent = kind === "incoming" ? "Received from" : "Payee";
+      el("lblDate").textContent = kind === "issued" ? "Date issued"
+        : kind === "approved" ? "Date approved" : "Expected date";
+      el("fParty").placeholder = kind === "incoming" ? "Who will pay you" : "Who is being paid";
+    }
+    el("fKind").addEventListener("change", sync);
+    sync();
+
+    el("fSave").addEventListener("click", function () {
+      var kind = el("fKind").value;
+      var amount = parseAmount(el("fAmount").value);
+      var party = el("fParty").value.trim();
+      var err = !party ? "Please enter a name."
+              : (!isFinite(amount) || amount === 0) ? "Please enter a valid amount."
+              : !el("fDate").value ? "Please choose a date." : "";
+      if (err) { var b = el("fError"); b.hidden = false; b.textContent = err; return; }
+      var data = {
+        kind: kind, date: el("fDate").value, party: party, amount: Math.abs(amount),
+        ref: kind === "incoming" ? "" : el("fRef").value.trim(),
+        purpose: el("fPurpose").value.trim(),
+        expected: kind === "approved" ? el("fExpected").value : "",
+        confidence: kind === "incoming" ? el("fConf").value : "medium"
+      };
+      if (it) { Object.keys(data).forEach(function (key) { it[key] = data[key]; }); }
+      else { state.items.push(normalizeItem(data)); }
+      save(); render(); closeModal();
+      toast(it ? "Entry updated." : "Entry added.");
+    });
+  }
+
+  /* ---------------- status changes ---------------- */
+  function clearModal(it) {
+    var newBal = num(state.bankBalance) - num(it.amount);
+    var body =
+      '<div class="note-box">' + h(it.party) + " · " + h(money(it.amount)) +
+        (it.ref ? " · Ref " + h(it.ref) : "") + "</div>" +
+      '<div class="field"><label for="cDate">Date it cleared the bank</label>' +
+        '<input type="date" id="cDate" value="' + todayISO() + '"></div>' +
+      '<label class="switch" style="align-items:flex-start">' +
+        '<input type="checkbox" id="cAdjust" checked><span class="track"></span>' +
+        "<span>Reduce the bank balance by " + h(money(it.amount)) +
+        "<br><span class='hint'>New bank balance: " + h(money(newBal)) +
+        ". Untick if your bank balance already includes this.</span></span></label>";
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+               '<button class="btn primary" id="cGo">Mark as cleared</button>';
+    openModal(modalShell("Mark cheque / payment as cleared", body, foot));
+    el("cGo").addEventListener("click", function () {
+      it.status = "cleared";
+      it.settledOn = el("cDate").value || todayISO();
+      if (el("cAdjust").checked) {
+        state.bankBalance = num(state.bankBalance) - num(it.amount);
+        state.bankUpdatedAt = stamp() + " (after clearing " + (it.ref || it.party) + ")";
+      }
+      save(); render(); closeModal();
+      toast("Marked as cleared.");
+    });
+  }
+
+  function releaseModal(it) {
+    var body =
+      '<div class="note-box">' + h(it.party) + " · " + h(money(it.amount)) +
+        (it.purpose ? " · " + h(it.purpose) : "") + "</div>" +
+      '<p style="margin:0;color:var(--muted)">Once released, this moves from &ldquo;approved&rdquo; to ' +
+        "&ldquo;issued but not yet cleared&rdquo;, so it still reduces your projected balance.</p>" +
+      '<div class="grid2">' +
+        '<div class="field"><label for="rDate">Date released</label>' +
+          '<input type="date" id="rDate" value="' + todayISO() + '"></div>' +
+        '<div class="field"><label for="rRef">Cheque / reference number</label>' +
+          '<input type="text" id="rRef" placeholder="e.g. CHQ-00124"></div>' +
+      "</div>";
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+               '<button class="btn primary" id="rGo">Mark as released</button>';
+    openModal(modalShell("Release an approved payment", body, foot));
+    el("rGo").addEventListener("click", function () {
+      it.kind = "issued";
+      it.status = "uncleared";
+      it.date = el("rDate").value || todayISO();
+      it.ref = el("rRef").value.trim() || it.ref;
+      it.expected = "";
+      save(); render(); closeModal();
+      toast("Released — now shown as issued but not yet cleared.");
+    });
+  }
+
+  function receiveModal(it) {
+    var newBal = num(state.bankBalance) + num(it.amount);
+    var body =
+      '<div class="note-box">' + h(it.party) + " · " + h(money(it.amount)) + "</div>" +
+      '<div class="field"><label for="vDate">Date received</label>' +
+        '<input type="date" id="vDate" value="' + todayISO() + '"></div>' +
+      '<label class="switch" style="align-items:flex-start">' +
+        '<input type="checkbox" id="vAdjust" checked><span class="track"></span>' +
+        "<span>Add " + h(money(it.amount)) + " to the bank balance" +
+        "<br><span class='hint'>New bank balance: " + h(money(newBal)) + "</span></span></label>";
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+               '<button class="btn primary" id="vGo">Mark as received</button>';
+    openModal(modalShell("Mark collection as received", body, foot));
+    el("vGo").addEventListener("click", function () {
+      it.status = "received";
+      it.settledOn = el("vDate").value || todayISO();
+      if (el("vAdjust").checked) {
+        state.bankBalance = num(state.bankBalance) + num(it.amount);
+        state.bankUpdatedAt = stamp() + " (after receiving from " + it.party + ")";
+      }
+      save(); render(); closeModal();
+      toast("Marked as received.");
+    });
+  }
+
+  /* ---------------- bank balance ---------------- */
+  function balanceModal() {
+    var body =
+      '<div class="field"><label for="bVal">Balance as shown by the bank</label>' +
+        '<input type="text" id="bVal" inputmode="decimal" value="' + h(String(state.bankBalance)) + '">' +
+        '<span class="hint">Type the figure from your bank statement or net banking screen.</span></div>' +
+      '<div class="note-box" id="bPreview"></div>';
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+               '<button class="btn primary" id="bGo">Save balance</button>';
+    openModal(modalShell("Update actual bank balance", body, foot));
+    function prev() {
+      var v = parseAmount(el("bVal").value);
+      el("bPreview").textContent = isFinite(v)
+        ? "Projected available balance will become " +
+          money(v - totals().issued - totals().approved +
+                (state.includeIncoming ? totals().incoming : 0))
+        : "Enter a number.";
+    }
+    el("bVal").addEventListener("input", prev); prev();
+    el("bGo").addEventListener("click", function () {
+      var v = parseAmount(el("bVal").value);
+      if (!isFinite(v)) { toast("Please enter a valid number."); return; }
+      state.bankBalance = v;
+      state.bankUpdatedAt = stamp();
+      save(); render(); closeModal();
+      toast("Bank balance updated.");
+    });
+  }
+
+  /* ---------------- settings ---------------- */
+  function settingsModal() {
+    var body =
+      '<div class="field"><label for="sName">Company / entity name</label>' +
+        '<input type="text" id="sName" value="' + h(state.companyName) + '" maxlength="80">' +
+        '<span class="hint">Shown at the top of the dashboard.</span></div>' +
+      '<div class="grid2">' +
+        '<div class="field"><label for="sCur">Currency symbol</label>' +
+          '<input type="text" id="sCur" value="' + h(state.currency) + '" maxlength="4"></div>' +
+        '<div class="field"><label for="sGrp">Number style</label><select id="sGrp">' +
+          '<option value="in"' + (state.grouping === "in" ? " selected" : "") + ">12,34,567.89 (Indian)</option>" +
+          '<option value="intl"' + (state.grouping === "intl" ? " selected" : "") + ">1,234,567.89 (International)</option>" +
+        "</select></div></div>" +
+      '<div class="field"><label for="sWarn">Warn me when the projected balance falls below</label>' +
+        '<input type="text" id="sWarn" inputmode="decimal" value="' + h(String(state.warnThreshold)) + '">' +
+        '<span class="hint">The projected balance card turns amber below this figure, and red below zero. Use 0 for no warning level.</span></div>';
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+               '<button class="btn primary" id="sGo">Save settings</button>';
+    openModal(modalShell("Settings", body, foot));
+    el("sGo").addEventListener("click", function () {
+      state.companyName = el("sName").value.trim() || "My Company";
+      state.currency = el("sCur").value.trim() || "₹";
+      state.grouping = el("sGrp").value;
+      var w = parseAmount(el("sWarn").value);
+      state.warnThreshold = isFinite(w) ? Math.abs(w) : 0;
+      save(); render(); closeModal();
+      toast("Settings saved.");
+    });
+  }
+
+  /* ---------------- reset ---------------- */
+  function resetModal() {
+    var body =
+      '<div class="note-box bad"><b>This deletes everything on this device:</b> all ' +
+        state.items.length + " entries, the bank balance, and your company name. " +
+        "It cannot be undone.</div>" +
+      '<p style="margin:0">If you might need this data later, close this box and use ' +
+        "<b>Export</b> first.</p>" +
+      '<label class="switch"><input type="checkbox" id="rOk"><span class="track"></span>' +
+        "<span>Yes, I understand this cannot be undone</span></label>";
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+               '<button class="btn solid-danger" id="rGo" disabled>Delete all data</button>';
+    openModal(modalShell("Reset / clear all data", body, foot));
+    el("rOk").addEventListener("change", function () { el("rGo").disabled = !this.checked; });
+    el("rGo").addEventListener("click", function () {
+      state = defaults();
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      save(); render(); closeModal();
+      toast("All data cleared.");
+    });
+  }
+
+  /* ---------------- export ---------------- */
+  function download(filename, text, mime) {
+    var blob = new Blob([text], { type: mime || "application/octet-stream" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 400);
+  }
+  function slug() {
+    return (state.companyName || "company").toLowerCase().replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "").slice(0, 32) || "company";
+  }
+  var CSV_COLS = ["Type", "Date", "Name", "Amount", "Reference", "Purpose",
+                  "Expected Release", "Confidence", "Status"];
+  function csvCell(v) {
+    v = String(v === undefined || v === null ? "" : v);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function toCsv() {
+    var lines = [CSV_COLS.join(",")];
+    state.items.forEach(function (it) {
+      lines.push([
+        KINDS[it.kind].label, it.date, it.party, num(it.amount).toFixed(2), it.ref,
+        it.purpose, it.expected, it.kind === "incoming" ? it.confidence : "", statusLabel(it)
+      ].map(csvCell).join(","));
+    });
+    lines.push("");
+    lines.push(["Bank Balance", "", "", num(state.bankBalance).toFixed(2)].map(csvCell).join(","));
+    return lines.join("\r\n");
+  }
+  function exportModal() {
+    var body =
+      '<p style="margin:0">Save a copy of your data as a file you can keep as a backup, ' +
+        "or send to a colleague so they can load it on their own computer.</p>" +
+      '<div class="note-box"><b>Backup file (.json)</b> &mdash; keeps everything exactly, ' +
+        "including statuses and settings. Use this one to move data between people or devices.</div>" +
+      '<div class="note-box"><b>Spreadsheet file (.csv)</b> &mdash; opens in Excel. ' +
+        "Good for printing, sharing or editing. You can edit it and upload it back in.</div>";
+    var foot = '<button class="btn" data-close="1">Cancel</button><span class="spacer"></span>' +
+               '<button class="btn" id="eCsv">Download .csv</button>' +
+               '<button class="btn primary" id="eJson">Download .json backup</button>';
+    openModal(modalShell("Export data", body, foot));
+    el("eJson").addEventListener("click", function () {
+      var payload = { format: "cash-flow-control", version: 1,
+                      exportedAt: new Date().toISOString(), data: state };
+      download(slug() + "-cashflow-" + todayISO() + ".json",
+               JSON.stringify(payload, null, 2), "application/json");
+      closeModal(); toast("Backup downloaded.");
+    });
+    el("eCsv").addEventListener("click", function () {
+      download(slug() + "-cashflow-" + todayISO() + ".csv", "﻿" + toCsv(), "text/csv");
+      closeModal(); toast("Spreadsheet downloaded.");
+    });
+  }
+
+  /* ---------------- import a backup ---------------- */
+  function importDataModal(payload) {
+    var incoming = migrate(payload.data || payload);
+    var body =
+      '<div class="note-box ok">Backup file read successfully &mdash; ' + incoming.items.length +
+        " entries" + (incoming.companyName ? " from &ldquo;" + h(incoming.companyName) + "&rdquo;" : "") +
+        ", bank balance " + h(money(incoming.bankBalance)) + ".</div>" +
+      '<div class="field"><span class="lbl">How should this be loaded?</span>' +
+        '<label class="switch" style="margin-top:4px"><input type="radio" name="imode" value="merge" checked>' +
+          '<span class="track"></span><span>Add to what I already have ' +
+          "(" + state.items.length + " entries), skipping duplicates</span></label>" +
+        '<label class="switch" style="margin-top:8px"><input type="radio" name="imode" value="replace">' +
+          '<span class="track"></span><span>Replace everything I have with this file</span></label></div>';
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+               '<button class="btn primary" id="iGo">Load data</button>';
+    openModal(modalShell("Import a backup file", body, foot));
+    el("iGo").addEventListener("click", function () {
+      var mode = document.querySelector('input[name=imode]:checked').value;
+      if (mode === "replace") {
+        state = incoming;
+        toast("Loaded " + state.items.length + " entries.");
+      } else {
+        var seen = {};
+        state.items.forEach(function (x) { seen[fingerprint(x)] = true; });
+        var added = 0, dupes = 0;
+        incoming.items.forEach(function (x) {
+          var f = fingerprint(x);
+          if (seen[f]) { dupes++; return; }
+          seen[f] = true; x.id = uid(); state.items.push(x); added++;
+        });
+        if (!state.bankBalance && incoming.bankBalance) {
+          state.bankBalance = incoming.bankBalance;
+          state.bankUpdatedAt = incoming.bankUpdatedAt;
+        }
+        toast("Added " + added + " entries" + (dupes ? ", skipped " + dupes + " duplicates." : "."));
+      }
+      save(); render(); closeModal();
+    });
+  }
+
+  /* ---------------- value parsing (forgiving) ---------------- */
+  function cellText(v) {
+    if (v === null || v === undefined) return "";
+    if (typeof v === "object" && v.d) return v.d;
+    return String(v);
+  }
+  function parseAmount(v) {
+    if (typeof v === "number") return isFinite(v) ? v : NaN;
+    if (v && typeof v === "object") return NaN;
+    var s = String(v === undefined || v === null ? "" : v).trim();
+    if (!s) return NaN;
+    if (/^[-+]?\d*\.?\d+e[-+]?\d+$/i.test(s)) { var e = parseFloat(s); return isFinite(e) ? e : NaN; }
+    var neg = /^\(.*\)$/.test(s) || /(^|\s)(dr|debit)\.?$/i.test(s) || /^-/.test(s);
+    s = s.replace(/[()]/g, "").replace(/(dr|cr|debit|credit)\.?$/i, "");
+    s = s.replace(/^\s*[a-z]+[a-z\s]*\.\s*/i, "");   /* drop an "Rs." / "INR." prefix */
+    s = s.replace(/[^0-9.,\-]/g, "");
+    /* "1234,56" (comma used as the decimal point) */
+    if (/^-?\d+,\d{1,2}$/.test(s) && s.indexOf(".") < 0) s = s.replace(",", ".");
+    else s = s.replace(/,/g, "");
+    s = s.replace(/(?!^)-/g, "");
+    var n = parseFloat(s);
+    if (!isFinite(n)) return NaN;
+    n = Math.abs(n);
+    return neg ? -n : n;
+  }
+  var MONTHS = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, sept:9, oct:10, nov:11, dec:12 };
+  function pad(n) { return String(n).length < 2 ? "0" + n : String(n); }
+  function mkISO(y, m, d) {
+    y = Number(y); m = Number(m); d = Number(d);
+    if (y < 100) y += y < 70 ? 2000 : 1900;
+    if (!(m >= 1 && m <= 12) || !(d >= 1 && d <= 31) || !(y >= 1900 && y <= 2200)) return null;
+    return y + "-" + pad(m) + "-" + pad(d);
+  }
+  function parseDateCell(v, order) {
+    if (v === null || v === undefined || v === "") return null;
+    if (typeof v === "object" && v.d) return v.d;
+    if (typeof v === "number") return isFinite(v) && v > 0 && v < 2958466 ? SheetLib.serialToISO(v) : null;
+    var s = String(v).trim();
+    if (!s) return null;
+    var m = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/.exec(s);
+    if (m) return mkISO(m[1], m[2], m[3]);
+    m = /^(\d{1,2})[-\/.\s](\d{1,2})[-\/.\s](\d{2,4})/.exec(s);
+    if (m) {
+      var a = Number(m[1]), b = Number(m[2]);
+      var dayFirst = order === "mdy" ? false : order === "dmy" ? true : (a > 12 ? true : b > 12 ? false : true);
+      if (a > 12 && b > 12) return null;
+      return dayFirst ? mkISO(m[3], b, a) : mkISO(m[3], a, b);
+    }
+    m = /^(\d{1,2})[-\s]([a-z]{3,9})[-\s,]*(\d{2,4})$/i.exec(s);
+    if (m && MONTHS[m[2].slice(0, 4).toLowerCase()] || (m && MONTHS[m[2].slice(0, 3).toLowerCase()]))
+      return mkISO(m[3], MONTHS[m[2].slice(0, 4).toLowerCase()] || MONTHS[m[2].slice(0, 3).toLowerCase()], m[1]);
+    m = /^([a-z]{3,9})[-\s]+(\d{1,2})[-\s,]+(\d{2,4})$/i.exec(s);
+    if (m) {
+      var mo = MONTHS[m[1].slice(0, 4).toLowerCase()] || MONTHS[m[1].slice(0, 3).toLowerCase()];
+      if (mo) return mkISO(m[3], mo, m[2]);
+    }
+    return null;
+  }
+  function parseStatus(v, kind) {
+    var s = cellText(v).trim().toLowerCase();
+    if (!s) return null;
+    if (kind === "issued")   return /clear|encash|realis|realiz|debited|paid|done|yes|presented/.test(s) && !/not|un|pend/.test(s) ? "cleared" : "uncleared";
+    if (kind === "approved") return /releas|issued|paid|done|yes/.test(s) && !/not|un|pend|yet/.test(s) ? "released" : "pending";
+    return /receiv|collect|credited|done|yes/.test(s) && !/not|un|pend|yet|await/.test(s) ? "received" : "expected";
+  }
+  function parseConfidence(v) {
+    var s = cellText(v).trim().toLowerCase();
+    if (/high|sure|certain|confirm|firm|\b9\d|100/.test(s)) return "high";
+    if (/low|doubt|unlikely|poor|risk|\b[1-3]\d?%/.test(s)) return "low";
+    return "medium";
+  }
+  function parseKindCell(v, fallback) {
+    var s = cellText(v).trim().toLowerCase();
+    if (!s) return fallback;
+    if (/incom|collect|receiv|inflow|debtor|customer/.test(s)) return "incoming";
+    if (/approv|sanction|pending release|not released/.test(s)) return "approved";
+    if (/issu|cheque|chq|payment|paid|outflow/.test(s)) return "issued";
+    return fallback;
+  }
+
+  /* ---------------- header / column guessing ---------------- */
+  var FIELDS = {
+    type:       ["type", "entry type", "kind", "category"],
+    date:       ["date", "dated", "txn date", "transaction date", "cheque date", "payment date",
+                 "issue date", "issued on", "voucher date", "value date", "approval date",
+                 "approved on", "bill date", "invoice date", "due date", "expected date"],
+    party:      ["payee", "payee name", "party", "party name", "vendor", "supplier", "name",
+                 "paid to", "pay to", "beneficiary", "to whom", "from whom", "from", "customer",
+                 "client", "account name"],
+    amount:     ["amount", "amt", "value", "total", "debit", "credit", "payment amount",
+                 "net amount", "gross amount", "amount rs", "amount inr", "rs", "inr"],
+    ref:        ["reference", "ref", "ref no", "reference no", "cheque no", "cheque number",
+                 "chq no", "chq", "voucher no", "utr", "utr no", "txn id", "transaction id",
+                 "instrument no", "doc no", "invoice no", "bill no"],
+    status:     ["status", "cleared", "clearance", "state", "cheque status", "payment status"],
+    purpose:    ["purpose", "narration", "description", "particulars", "remarks", "details",
+                 "notes", "expense head", "head", "nature", "towards"],
+    expected:   ["expected release", "expected release date", "release date", "expected date",
+                 "expected on", "planned date", "payment due", "due date"],
+    confidence: ["confidence", "likelihood", "probability", "certainty", "chance", "rating"]
+  };
+  /* per-kind hints steer ambiguous headers such as "due date" */
+  var PREFER = {
+    issued:   { date: ["cheque date", "payment date", "issue date", "issued on", "date", "voucher date"] },
+    approved: { date: ["approval date", "approved on", "date"], expected: ["expected release date", "release date", "expected date", "due date"] },
+    incoming: { date: ["due date", "expected date", "date"], party: ["from whom", "from", "customer", "client", "name"] }
+  };
+  function normHead(s) {
+    return cellText(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function scoreHeader(head, aliases) {
+    var n = normHead(head), best = 0;
+    if (!n) return 0;
+    aliases.forEach(function (a, i) {
+      var bonus = (aliases.length - i) / (aliases.length * 100);
+      if (n === a) best = Math.max(best, 3 + bonus);
+      else if (n.indexOf(a) === 0 || n.indexOf(" " + a) > -1) best = Math.max(best, 2 + bonus);
+      else if (n.indexOf(a) > -1) best = Math.max(best, 1 + bonus);
+    });
+    return best;
+  }
+  function detectHeaderRow(rows) {
+    var best = 0, bestScore = -1;
+    var limit = Math.min(rows.length, 20);
+    for (var i = 0; i < limit; i++) {
+      var r = rows[i] || [], hits = 0, texts = 0;
+      r.forEach(function (c) {
+        var t = cellText(c).trim();
+        if (!t) return;
+        if (typeof c === "string" && isNaN(parseFloat(t))) texts++;
+        var s = 0;
+        Object.keys(FIELDS).forEach(function (f) { s = Math.max(s, scoreHeader(t, FIELDS[f])); });
+        if (s >= 2) hits++;
+      });
+      var score = hits * 10 + texts;
+      if (hits >= 2 && score > bestScore) { bestScore = score; best = i; }
+    }
+    return best;
+  }
+  function guessKind(headers) {
+    var joined = headers.map(normHead).join(" ");
+    if (/from whom|customer|client|collect|receiv|confidence|likelihood|debtor/.test(joined)) return "incoming";
+    if (/approv|release|sanction/.test(joined)) return "approved";
+    return "issued";
+  }
+  function fieldsFor(kind) {
+    var order = ["type", "amount"];
+    if (kind !== "incoming") order.push("ref");
+    if (kind === "incoming") order.push("confidence");
+    order.push("status");
+    if (kind === "approved") order.push("expected");
+    return order.concat(["date", "party", "purpose"]);
+  }
+  function guessMap(headers, kind) {
+    var map = {}, used = {};
+    Object.keys(FIELDS).forEach(function (f) { map[f] = -1; });
+    fieldsFor(kind).forEach(function (f) {
+      var aliases = (PREFER[kind] && PREFER[kind][f] ? PREFER[kind][f] : []).concat(FIELDS[f]);
+      var bestI = -1, bestS = 1.5;
+      headers.forEach(function (hd, i) {
+        if (used[i]) return;
+        var s = scoreHeader(hd, aliases);
+        if (s > bestS) { bestS = s; bestI = i; }
+      });
+      if (bestI >= 0) { map[f] = bestI; used[bestI] = true; }
+      else map[f] = -1;
+    });
+    return map;
+  }
+  function detectDateOrder(rows, col) {
+    var dayFirst = 0, monthFirst = 0;
+    rows.forEach(function (r) {
+      var m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/.exec(cellText(r[col]).trim());
+      if (!m) return;
+      if (Number(m[1]) > 12) dayFirst++;
+      else if (Number(m[2]) > 12) monthFirst++;
+    });
+    return monthFirst > dayFirst ? "mdy" : "dmy";
+  }
+  function findBankBalance(sheets) {
+    var re = /(bank|closing|opening|current|available)?\s*balance\s*(as per|per|in)?\s*(bank|statement|books)?/i;
+    for (var s = 0; s < sheets.length; s++) {
+      var rows = sheets[s].rows;
+      for (var i = 0; i < Math.min(rows.length, 30); i++) {
+        for (var j = 0; j < rows[i].length; j++) {
+          var txt = cellText(rows[i][j]).trim();
+          if (!txt || txt.length > 60 || !re.test(txt) || !/balance/i.test(txt)) continue;
+          for (var k = j + 1; k < rows[i].length; k++) {
+            var v = parseAmount(rows[i][k]);
+            if (isFinite(v) && v !== 0) return { value: v, label: txt, sheet: sheets[s].name };
+          }
+          if (rows[i + 1]) {
+            var below = parseAmount(rows[i + 1][j]);
+            if (isFinite(below) && below !== 0) return { value: below, label: txt, sheet: sheets[s].name };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /* ---------------- upload wizard ---------------- */
+  var wiz = null;
+  var fileMode = "sheet";
+
+  function startWizard(workbook, filename) {
+    wiz = {
+      filename: filename,
+      sheets: workbook.sheets.map(function (s) {
+        var hr = detectHeaderRow(s.rows);
+        var headers = (s.rows[hr] || []).map(cellText);
+        var kind = guessKind(headers);
+        var map = guessMap(headers, kind);
+        var body = s.rows.slice(hr + 1);
+        return { name: s.name, rows: s.rows, headerRow: hr, kind: kind, map: map,
+                 use: s.rows.length > hr + 1,
+                 dateOrder: map.date >= 0 ? detectDateOrder(body, map.date) : "dmy" };
+      }),
+      bank: findBankBalance(workbook.sheets),
+      useBank: true, mode: "add", skipDupes: true
+    };
+    renderWizard();
+  }
+
+  function sheetHeaders(s) { return (s.rows[s.headerRow] || []).map(cellText); }
+
+  function buildRows(s) {
+    if (!s.use) return { items: [], bad: 0, blank: 0 };
+    var out = [], bad = 0, blank = 0;
+    s.rows.slice(s.headerRow + 1).forEach(function (r) {
+      function at(f) { return s.map[f] >= 0 ? r[s.map[f]] : ""; }
+      var party = cellText(at("party")).trim();
+      var rawAmt = at("amount");
+      var amount = parseAmount(rawAmt);
+      var dateISO = parseDateCell(at("date"), s.dateOrder);
+      var isBlank = r.every(function (c) { return cellText(c).trim() === ""; });
+      if (isBlank || (!party && !isFinite(amount))) { blank++; return; }
+      var kind = s.map.type >= 0 ? parseKindCell(at("type"), s.kind) : s.kind;
+      var errs = [];
+      if (!isFinite(amount) || amount === 0) errs.push("amount");
+      if (!dateISO) errs.push("date");
+      if (!party) errs.push("name");
+      var it = normalizeItem({
+        kind: kind,
+        date: dateISO || "",
+        party: party,
+        amount: isFinite(amount) ? Math.abs(amount) : 0,
+        ref: kind === "incoming" ? "" : cellText(at("ref")).trim(),
+        purpose: cellText(at("purpose")).trim(),
+        expected: kind === "approved" ? (parseDateCell(at("expected"), s.dateOrder) || "") : "",
+        confidence: kind === "incoming" ? parseConfidence(at("confidence")) : "medium",
+        status: (s.map.status >= 0 ? parseStatus(at("status"), kind) : null) ||
+                (kind === "issued" ? "uncleared" : kind === "approved" ? "pending" : "expected")
+      });
+      it._errs = errs;
+      it._raw = { amount: cellText(rawAmt), date: cellText(at("date")) };
+      if (errs.length) bad++;
+      out.push(it);
+    });
+    return { items: out, bad: bad, blank: blank };
+  }
+
+  function renderWizard() {
+    var totalGood = 0, totalBad = 0;
+    var sheetsHtml = wiz.sheets.map(function (s, si) {
+      var headers = sheetHeaders(s);
+      var res = buildRows(s);
+      totalGood += res.items.length - res.bad;
+      totalBad += res.bad;
+
+      var kindSel = '<select data-w="kind" data-i="' + si + '">' +
+        '<option value="skip"' + (!s.use ? " selected" : "") + ">Don&rsquo;t import this sheet</option>" +
+        Object.keys(KINDS).map(function (k) {
+          return '<option value="' + k + '"' + (s.use && s.kind === k ? " selected" : "") + ">" +
+                 h(KINDS[k].noun) + "</option>";
+        }).join("") + "</select>";
+
+      var head =
+        '<div class="sheetrow"><span class="nm">' + h(s.name) + "</span>" +
+        '<span class="meta">' + (s.rows.length) + " rows</span>" + kindSel + "</div>";
+      if (!s.use) return head;
+
+      var rowOpts = "";
+      for (var i = 0; i < Math.min(s.rows.length, 20); i++) {
+        var peek = (s.rows[i] || []).map(cellText).filter(Boolean).slice(0, 4).join(", ").slice(0, 58);
+        rowOpts += '<option value="' + i + '"' + (i === s.headerRow ? " selected" : "") + ">" +
+                   "Row " + (i + 1) + ": " + h(peek || "(empty)") + "</option>";
+      }
+
+      var fieldsForKind = ["date", "party", "amount"]
+        .concat(s.kind === "incoming" ? ["confidence"] : ["ref"])
+        .concat(s.kind === "approved" ? ["expected"] : [])
+        .concat(["purpose", "status", "type"]);
+      var LBL = { date: "Date", party: s.kind === "incoming" ? "Received from" : "Payee name",
+                  amount: "Amount", ref: "Cheque / reference no.", purpose: "Purpose / narration",
+                  status: "Status", expected: "Expected release date",
+                  confidence: "Confidence", type: "Entry type (optional)" };
+      var maps = fieldsForKind.map(function (f) {
+        var opts = '<option value="-1">— not in my file —</option>' + headers.map(function (hd, ci) {
+          var name = cellText(hd).trim() || "(column " + colName(ci) + ")";
+          return '<option value="' + ci + '"' + (s.map[f] === ci ? " selected" : "") + ">" +
+                 h(colName(ci) + ": " + name) + "</option>";
+        }).join("");
+        return '<div class="field"><label>' + h(LBL[f]) + "</label>" +
+               '<select data-w="map" data-i="' + si + '" data-f="' + f + '">' + opts + "</select></div>";
+      }).join("");
+
+      var dateSel = '<div class="field"><label>Date order in this file</label>' +
+        '<select data-w="order" data-i="' + si + '">' +
+        '<option value="dmy"' + (s.dateOrder === "dmy" ? " selected" : "") + ">Day first (31/12/2026)</option>" +
+        '<option value="mdy"' + (s.dateOrder === "mdy" ? " selected" : "") + ">Month first (12/31/2026)</option>" +
+        "</select></div>";
+
+      var prevRows = res.items.slice(0, 8).map(function (it) {
+        function cell(v, bad) { return '<td' + (bad ? ' class="bad"' : "") + ">" + h(v) + "</td>"; }
+        return "<tr>" + cell(KINDS[it.kind].label) +
+          cell(it.date ? fmtDate(it.date) : (it._raw.date || "missing"), it._errs.indexOf("date") > -1) +
+          cell(it.party || "missing", it._errs.indexOf("name") > -1) +
+          cell(it.amount ? money(it.amount) : (it._raw.amount || "missing"), it._errs.indexOf("amount") > -1) +
+          cell(it.ref || it.purpose || "") + cell(statusLabel(it)) + "</tr>";
+      }).join("");
+
+      var warn = "";
+      if (res.bad) warn = '<div class="note-box warn">' + res.bad + " row" + (res.bad === 1 ? "" : "s") +
+        " in this sheet have a missing or unreadable date, name or amount (shown in red). " +
+        "Check the column choices above — anything still marked red will be skipped.</div>";
+      else if (res.items.length) warn = '<div class="note-box ok">' + res.items.length +
+        " row" + (res.items.length === 1 ? "" : "s") + " ready to import from this sheet.</div>";
+      else warn = '<div class="note-box warn">No usable rows found in this sheet.</div>';
+
+      return head +
+        '<div style="padding:0 2px 14px">' +
+          '<div class="field" style="margin-bottom:10px"><label>Which row has the column headings?</label>' +
+            '<select data-w="hrow" data-i="' + si + '">' + rowOpts + "</select></div>" +
+          '<div class="mapgrid">' + maps + dateSel + "</div>" +
+          (prevRows ? '<div class="preview" style="margin-top:11px"><table><thead><tr>' +
+            "<th>Type</th><th>Date</th><th>Name</th><th>Amount</th><th>Details</th><th>Status</th>" +
+            "</tr></thead><tbody>" + prevRows + "</tbody></table></div>" : "") +
+          warn +
+        "</div>";
+    }).join("");
+
+    var bankHtml = wiz.bank
+      ? '<label class="switch"><input type="checkbox" data-w="bank"' + (wiz.useBank ? " checked" : "") +
+        '><span class="track"></span><span>Set the bank balance to <b>' + h(money(wiz.bank.value)) +
+        "</b> <span class='hint'>(found as &ldquo;" + h(wiz.bank.label) + "&rdquo; in " +
+        h(wiz.bank.sheet) + ")</span></span></label>"
+      : '<div class="note-box">No bank balance was found in this file. You can set it afterwards ' +
+        "with the &ldquo;Update bank balance&rdquo; button.</div>";
+
+    var body =
+      '<div class="steps"><span>1. Choose file</span> &rsaquo; <span aria-current="step">2. Check the columns</span>' +
+        " &rsaquo; <span>3. Import</span></div>" +
+      '<div class="note-box">Reading <b>' + h(wiz.filename) + "</b>. " +
+        "Tell us what each sheet contains and check that the columns lined up correctly. " +
+        "Change any dropdown that looks wrong.</div>" +
+      sheetsHtml + bankHtml +
+      '<div class="field"><span class="lbl">Add to or replace existing entries?</span>' +
+        '<label class="switch" style="margin-top:4px"><input type="radio" name="wmode" value="add"' +
+          (wiz.mode === "add" ? " checked" : "") + '><span class="track"></span>' +
+          "<span>Add these to my existing " + state.items.length + " entries</span></label>" +
+        '<label class="switch" style="margin-top:8px"><input type="radio" name="wmode" value="replace"' +
+          (wiz.mode === "replace" ? " checked" : "") + '><span class="track"></span>' +
+          "<span>Replace all my existing entries with this file</span></label></div>" +
+      '<label class="switch"><input type="checkbox" data-w="dupes"' + (wiz.skipDupes ? " checked" : "") +
+        '><span class="track"></span><span>Skip rows that look identical to entries I already have</span></label>';
+
+    var foot = '<button class="btn" data-close="1">Cancel</button>' +
+      '<span class="spacer"></span><span style="align-self:center;color:var(--muted);font-size:12.5px">' +
+      totalGood + " ready" + (totalBad ? ", " + totalBad + " will be skipped" : "") + "</span>" +
+      '<button class="btn primary" id="wGo"' + (totalGood ? "" : " disabled") + ">Import " +
+      totalGood + " entries</button>";
+
+    openModal(modalShell("Upload spreadsheet", body, foot), { wide: true });
+    el("wGo").addEventListener("click", commitWizard);
+  }
+  function colName(i) {
+    var s = "";
+    i = i + 1;
+    while (i > 0) { var r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); }
+    return s;
+  }
+
+  function commitWizard() {
+    var incoming = [];
+    wiz.sheets.forEach(function (s) {
+      buildRows(s).items.forEach(function (it) {
+        if (it._errs.length) return;
+        delete it._errs; delete it._raw;
+        incoming.push(it);
+      });
+    });
+    if (wiz.mode === "replace") state.items = [];
+    var seen = {};
+    state.items.forEach(function (x) { seen[fingerprint(x)] = true; });
+    var added = 0, dupes = 0;
+    incoming.forEach(function (it) {
+      var f = fingerprint(it);
+      if (wiz.skipDupes && seen[f]) { dupes++; return; }
+      seen[f] = true; state.items.push(it); added++;
+    });
+    if (wiz.bank && wiz.useBank) {
+      state.bankBalance = wiz.bank.value;
+      state.bankUpdatedAt = stamp() + " (from " + wiz.filename + ")";
+    }
+    save(); render(); closeModal();
+    toast("Imported " + added + " entries" + (dupes ? ", skipped " + dupes + " duplicates." : "."));
+  }
+
+  function uploadModal() {
+    fileMode = "sheet";           /* never inherit a stale mode from a previous action */
+    var body =
+      '<div class="steps"><span aria-current="step">1. Choose file</span> &rsaquo; ' +
+        "<span>2. Check the columns</span> &rsaquo; <span>3. Import</span></div>" +
+      '<div class="filedrop" id="drop">Drag your Excel or CSV file here, or ' +
+        '<button class="btn" id="pick" style="margin-left:4px">choose a file</button>' +
+        '<div class="hint" style="margin-top:9px">Accepts .xlsx, .xlsm, .csv and .txt files. ' +
+        "Nothing is uploaded anywhere — the file is read on this computer.</div></div>" +
+      '<div class="note-box"><b>What your file should contain</b><br>' +
+        "A row of column headings such as <b>Date, Payee, Amount, Cheque No., Status</b>, " +
+        "with one payment per row underneath. Put approved-but-not-released payments and " +
+        "expected collections on their own sheets or in their own file. " +
+        "A cell reading <b>Bank Balance</b> with the figure beside it will be picked up automatically. " +
+        "Headings don&rsquo;t have to match exactly — you can correct them in the next step.</div>" +
+      '<div class="note-box bad" id="upErr" hidden></div>';
+    var foot = '<button class="btn" data-close="1">Cancel</button><span class="spacer"></span>' +
+               '<button class="btn" id="tmpl">Download a blank template</button>';
+    openModal(modalShell("Upload Excel / CSV file", body, foot));
+
+    el("pick").addEventListener("click", function () { chooseFile("sheet"); });
+    el("tmpl").addEventListener("click", function () {
+      var rows = [
+        ["Bank Balance", "", 1250000, "", "", "", "", "", ""],
+        [], CSV_COLS,
+        ["Issued", "14/08/2026", "Ramesh Traders", 125000, "CHQ-00121", "Site materials", "", "", "Uncleared"],
+        ["Approved", "20/08/2026", "Gupta Hardware", 45000, "", "Cement order", "10/09/2026", "", "Not released"],
+        ["Incoming", "20/09/2026", "Client A", 500000, "", "Bill no. 42", "", "High", "Expected"]
+      ];
+      download("cash-flow-template.csv",
+        "﻿" + rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n"), "text/csv");
+      toast("Template downloaded — fill it in and upload it back.");
+    });
+    var drop = el("drop");
+    ["dragenter", "dragover"].forEach(function (e) {
+      drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add("over"); });
+    });
+    ["dragleave", "drop"].forEach(function (e) {
+      drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove("over"); });
+    });
+    drop.addEventListener("drop", function (ev) {
+      if (ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0])
+        readSheetFile(ev.dataTransfer.files[0]);
+    });
+  }
+
+  function uploadError(msg) {
+    var b = el("upErr");
+    if (b) { b.hidden = false; b.innerHTML = h(msg); }
+    else toast(msg);
+  }
+  function readSheetFile(file) {
+    var fr = new FileReader();
+    fr.onerror = function () { uploadError("The file could not be read. Please try again."); };
+    fr.onload = function () {
+      try {
+        var wbk = SheetLib.readWorkbook(fr.result, file.name);
+        if (!wbk.sheets.length) throw new Error("The file appears to be empty.");
+        startWizard(wbk, file.name);
+      } catch (e) {
+        uploadError(e && e.message ? e.message : "This file could not be read.");
+      }
+    };
+    fr.readAsArrayBuffer(file);
+  }
+
+  function chooseFile(mode) {
+    fileMode = mode;
+    var inp = el("hiddenFile");
+    inp.value = "";
+    inp.accept = mode === "sheet" ? ".xlsx,.xlsm,.csv,.txt,.tsv" : ".json";
+    inp.click();
+  }
+  function readBackupFile(file) {
+    var fr = new FileReader();
+    fr.onerror = function () { toast("The file could not be read."); };
+    fr.onload = function () {
+      try {
+        var payload = JSON.parse(String(fr.result));
+        if (!payload || typeof payload !== "object") throw new Error("bad");
+        if (!payload.data && !Array.isArray(payload.items)) throw new Error("bad");
+        importDataModal(payload);
+      } catch (e) {
+        toast("That is not a valid backup file. Use a .json file exported from this dashboard.");
+      }
+    };
+    fr.readAsText(file);
+  }
+
+  /* ---------------- wiring ---------------- */
+  function init() {
+    load();
+    render();
+
+    el("btnAdd").addEventListener("click", function () { entryModal(null); });
+    el("btnUpload").addEventListener("click", uploadModal);
+    el("btnBalance").addEventListener("click", balanceModal);
+    el("btnExport").addEventListener("click", exportModal);
+    el("btnImport").addEventListener("click", function () { chooseFile("json"); });
+    el("btnSettings").addEventListener("click", settingsModal);
+    el("btnReset").addEventListener("click", resetModal);
+
+    el("hiddenFile").addEventListener("change", function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      if (fileMode === "sheet") readSheetFile(f); else readBackupFile(f);
+    });
+
+    el("incToggle").addEventListener("change", function () {
+      state.includeIncoming = this.checked; save(); render();
+    });
+    el("incMode").addEventListener("change", function () {
+      state.incomingMode = this.value; save(); render();
+    });
+    el("incHorizon").addEventListener("change", function () {
+      state.incomingHorizon = num(this.value); save(); render();
+    });
+
+    el("filterChips").addEventListener("click", function (e) {
+      var c = e.target.closest("[data-filter]");
+      if (!c) return;
+      view.filter = c.dataset.filter;
+      renderTable();
+    });
+    el("searchBox").addEventListener("input", function () {
+      view.search = this.value; renderTable();
+    });
+    document.querySelector("#itemsTable thead").addEventListener("click", function (e) {
+      var th = e.target.closest("th.sortable");
+      if (!th) return;
+      var k = th.dataset.sort;
+      if (view.sortKey === k) view.sortDir = view.sortDir === "asc" ? "desc" : "asc";
+      else { view.sortKey = k; view.sortDir = k === "amount" ? "desc" : k === "date" ? "desc" : "asc"; }
+      renderTable();
+    });
+
+    el("itemsBody").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-act]");
+      if (!b) return;
+      var it = state.items.filter(function (x) { return x.id === b.dataset.id; })[0];
+      if (!it) return;
+      var act = b.dataset.act;
+      if (act === "edit") entryModal(it.id);
+      else if (act === "clear") clearModal(it);
+      else if (act === "release") releaseModal(it);
+      else if (act === "receive") receiveModal(it);
+      else if (act === "reopen") {
+        it.status = it.kind === "issued" ? "uncleared" : it.kind === "approved" ? "pending" : "expected";
+        it.settledOn = "";
+        save(); render();
+        toast("Reopened. The bank balance was not changed — update it if needed.");
+      } else if (act === "del") {
+        if (confirm("Delete this entry?\n\n" + it.party + " · " + money(it.amount) +
+                    "\n\nThis cannot be undone.")) {
+          state.items = state.items.filter(function (x) { return x.id !== it.id; });
+          save(); render(); toast("Entry deleted.");
+        }
+      }
+    });
+
+    /* modal plumbing: close button, backdrop click, Escape, wizard controls */
+    el("overlay").addEventListener("click", function (e) {
+      if (e.target === el("overlay") || e.target.closest("[data-close]")) closeModal();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !el("overlay").hidden) closeModal();
+    });
+    el("overlay").addEventListener("change", function (e) {
+      var t = e.target;
+      if (t.name === "wmode" && wiz) { wiz.mode = t.value; return; }
+      var w = t.getAttribute && t.getAttribute("data-w");
+      if (!w || !wiz) return;
+      if (w === "bank") { wiz.useBank = t.checked; return; }
+      if (w === "dupes") { wiz.skipDupes = t.checked; return; }
+      var s = wiz.sheets[Number(t.getAttribute("data-i"))];
+      if (!s) return;
+      if (w === "kind") {
+        if (t.value === "skip") s.use = false;
+        else { s.use = true; s.kind = t.value; s.map = guessMap(sheetHeaders(s), s.kind); }
+      } else if (w === "hrow") {
+        s.headerRow = Number(t.value);
+        s.map = guessMap(sheetHeaders(s), s.kind);
+        if (s.map.date >= 0) s.dateOrder = detectDateOrder(s.rows.slice(s.headerRow + 1), s.map.date);
+      } else if (w === "map") {
+        s.map[t.getAttribute("data-f")] = Number(t.value);
+      } else if (w === "order") {
+        s.dateOrder = t.value;
+      }
+      renderWizard();
+    });
+  }
+
+  return { init: init, _t: { parseAmount: parseAmount, parseDateCell: parseDateCell,
+           detectHeaderRow: detectHeaderRow, guessMap: guessMap, guessKind: guessKind,
+           findBankBalance: findBankBalance, parseStatus: parseStatus, colName: colName,
+           parseKindCell: parseKindCell, parseConfidence: parseConfidence } };
+})();
+/* ===== APP-END ===== */
+document.addEventListener("DOMContentLoaded", App.init);
+</script>
+</body>
+</html>
