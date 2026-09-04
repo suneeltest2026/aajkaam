@@ -153,6 +153,12 @@ tr.done td{color:var(--muted)}
 .x{background:none;border:none;font-size:21px;line-height:1;color:var(--muted);padding:2px 6px;border-radius:6px}
 .x:hover{background:#eef1f4;color:var(--ink)}
 
+.optrow{display:flex;gap:12px;align-items:center;padding:11px 13px;
+  border:1px solid var(--line);border-radius:9px;margin-bottom:8px}
+.optrow .t{flex:1;min-width:0}
+.optrow .t b{display:block;font-size:13.5px;margin-bottom:1px}
+.optrow .t span{color:var(--muted);font-size:12.2px}
+@media(max-width:520px){.optrow{flex-wrap:wrap}}
 .note-box{border:1px solid var(--line);background:#fafbfc;border-radius:8px;
   padding:11px 13px;font-size:13px;color:var(--muted)}
 .note-box.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
@@ -726,6 +732,599 @@ var SheetLib = (function () {
            inflateRaw: inflateRaw, serialToISO: serialToISO, fmtIsDate: fmtIsDate };
 })();
 /* ===== SHEETLIB-END ===== */
+</script>
+
+<script>
+"use strict";
+/* ===== WRITERS-START =======================================================
+   Formatted .xlsx and .pdf writers, built from scratch so the dashboard stays
+   a single offline file. No libraries: a stored-entry ZIP writer with CRC-32
+   for the workbook, and a PDF generator using the base-14 Helvetica fonts
+   (metrics embedded below) so nothing has to be downloaded or subsetted.
+   ========================================================================= */
+var Writers = (function () {
+
+  /* ---------- bytes ---------- */
+  function utf8(str) {
+    if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(str);
+    var out = [], i, c;
+    for (i = 0; i < str.length; i++) {
+      c = str.charCodeAt(i);
+      if (c < 128) out.push(c);
+      else if (c < 2048) out.push(192 | (c >> 6), 128 | (c & 63));
+      else out.push(224 | (c >> 12), 128 | ((c >> 6) & 63), 128 | (c & 63));
+    }
+    return new Uint8Array(out);
+  }
+  function latin1(str) {
+    var b = new Uint8Array(str.length);
+    for (var i = 0; i < str.length; i++) b[i] = str.charCodeAt(i) & 255;
+    return b;
+  }
+  function concat(chunks) {
+    var len = 0, i;
+    for (i = 0; i < chunks.length; i++) len += chunks[i].length;
+    var out = new Uint8Array(len), at = 0;
+    for (i = 0; i < chunks.length; i++) { out.set(chunks[i], at); at += chunks[i].length; }
+    return out;
+  }
+
+  /* ---------- CRC-32 ---------- */
+  var CRC = null;
+  function crcTable() {
+    if (CRC) return CRC;
+    CRC = new Int32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      CRC[n] = c;
+    }
+    return CRC;
+  }
+  function crc32(buf) {
+    var t = crcTable(), c = -1;
+    for (var i = 0; i < buf.length; i++) c = t[(c ^ buf[i]) & 255] ^ (c >>> 8);
+    return (c ^ -1) >>> 0;
+  }
+
+  /* ---------- ZIP (stored entries; valid and small enough here) ---------- */
+  function zip(entries) {
+    var now = new Date();
+    var dosTime = ((now.getHours() & 31) << 11) | ((now.getMinutes() & 63) << 5) |
+                  ((now.getSeconds() / 2) & 31);
+    var dosDate = (((now.getFullYear() - 1980) & 127) << 9) |
+                  (((now.getMonth() + 1) & 15) << 5) | (now.getDate() & 31);
+    var locals = [], centrals = [], offset = 0;
+
+    entries.forEach(function (e) {
+      var name = utf8(e.name), data = e.bytes, sum = crc32(data);
+      var lh = new Uint8Array(30 + name.length), dv = new DataView(lh.buffer);
+      dv.setUint32(0, 0x04034b50, true);
+      dv.setUint16(4, 20, true); dv.setUint16(6, 0, true); dv.setUint16(8, 0, true);
+      dv.setUint16(10, dosTime, true); dv.setUint16(12, dosDate, true);
+      dv.setUint32(14, sum, true);
+      dv.setUint32(18, data.length, true); dv.setUint32(22, data.length, true);
+      dv.setUint16(26, name.length, true); dv.setUint16(28, 0, true);
+      lh.set(name, 30);
+      locals.push(lh, data);
+
+      var ch = new Uint8Array(46 + name.length), cv = new DataView(ch.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0, true); cv.setUint16(10, 0, true);
+      cv.setUint16(12, dosTime, true); cv.setUint16(14, dosDate, true);
+      cv.setUint32(16, sum, true);
+      cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true);
+      cv.setUint16(28, name.length, true);
+      cv.setUint32(42, offset, true);
+      ch.set(name, 46);
+      centrals.push(ch);
+      offset += lh.length + data.length;
+    });
+
+    var cdBytes = concat(centrals), cdSize = cdBytes.length;
+    var end = new Uint8Array(22), ev = new DataView(end.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(8, entries.length, true); ev.setUint16(10, entries.length, true);
+    ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+    return concat(locals.concat([cdBytes, end]));
+  }
+
+  /* ---------- XML helpers ---------- */
+  function x(s) {
+    return String(s === null || s === undefined ? "" : s)
+      .replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c];
+      })
+      /* control characters are illegal in XML 1.0 */
+      .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
+  }
+  function colLetter(i) {
+    var s = "";
+    i += 1;
+    while (i > 0) { var r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); }
+    return s;
+  }
+  function serial(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    if (!m) return null;
+    var ms = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    return Math.round(ms / 86400000) + 25569;
+  }
+
+  /* =======================================================================
+     XLSX
+     ===================================================================== */
+  function buildXlsx(doc) {
+    var money = '"' + String(doc.currency).replace(/"/g, "") + '"\\ #,##0.00';
+    var moneyNeg = money + ";[Red]\\-" + money;
+
+    var styles =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<numFmts count="2">' +
+        '<numFmt numFmtId="164" formatCode="' + x(moneyNeg) + '"/>' +
+        '<numFmt numFmtId="165" formatCode="dd\\ mmm\\ yyyy"/>' +
+      "</numFmts>" +
+      '<fonts count="7">' +
+        '<font><sz val="11"/><name val="Calibri"/></font>' +                                    /* 0 body */
+        '<font><b/><sz val="18"/><color rgb="FF1F4E79"/><name val="Calibri"/></font>' +          /* 1 title */
+        '<font><sz val="10"/><color rgb="FF808A96"/><name val="Calibri"/></font>' +              /* 2 muted */
+        '<font><b/><sz val="11"/><color rgb="FF1F4E79"/><name val="Calibri"/></font>' +          /* 3 heading */
+        '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +          /* 4 table head */
+        '<font><b/><sz val="11"/><name val="Calibri"/></font>' +                                 /* 5 bold */
+        '<font><b/><sz val="12"/><color rgb="FF0F6B45"/><name val="Calibri"/></font>' +          /* 6 good */
+      "</fonts>" +
+      '<fills count="6">' +
+        '<fill><patternFill patternType="none"/></fill>' +
+        '<fill><patternFill patternType="gray125"/></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FF1F4E79"/><bgColor indexed="64"/></patternFill></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F5F8"/><bgColor indexed="64"/></patternFill></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FFE8F5EE"/><bgColor indexed="64"/></patternFill></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FFFDECEA"/><bgColor indexed="64"/></patternFill></fill>' +
+      "</fills>" +
+      '<borders count="4">' +
+        "<border><left/><right/><top/><bottom/><diagonal/></border>" +
+        '<border><left style="thin"><color rgb="FFD5DCE4"/></left><right style="thin"><color rgb="FFD5DCE4"/></right>' +
+          '<top style="thin"><color rgb="FFD5DCE4"/></top><bottom style="thin"><color rgb="FFD5DCE4"/></bottom><diagonal/></border>' +
+        '<border><left/><right/><top style="medium"><color rgb="FF1F4E79"/></top><bottom/><diagonal/></border>' +
+        '<border><left/><right/><top/><bottom style="thin"><color rgb="FFD5DCE4"/></bottom><diagonal/></border>' +
+      "</borders>" +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      '<cellXfs count="14">' +
+        '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0"/>' +                                          /* 0 */
+        '<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1"/>' +                            /* 1 title */
+        '<xf xfId="0" numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"/>' +                            /* 2 muted */
+        '<xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1"/>' +                            /* 3 heading */
+        '<xf xfId="0" numFmtId="0" fontId="4" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' + /* 4 head */
+        '<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1"/>' +                          /* 5 cell */
+        '<xf xfId="0" numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1"/>' +  /* 6 money cell */
+        '<xf xfId="0" numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1"/>' +  /* 7 date cell */
+        '<xf xfId="0" numFmtId="0" fontId="5" fillId="0" borderId="0" applyFont="1"/>' +                            /* 8 bold */
+        '<xf xfId="0" numFmtId="164" fontId="5" fillId="0" borderId="2" applyNumberFormat="1" applyFont="1" applyBorder="1"/>' + /* 9 total */
+        '<xf xfId="0" numFmtId="164" fontId="0" fillId="0" borderId="0" applyNumberFormat="1"/>' +                  /* 10 money plain */
+        '<xf xfId="0" numFmtId="164" fontId="6" fillId="4" borderId="1" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>' + /* 11 projected ok */
+        '<xf xfId="0" numFmtId="164" fontId="5" fillId="5" borderId="1" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>' + /* 12 projected bad */
+        '<xf xfId="0" numFmtId="0" fontId="5" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1"/>' + /* 13 summary label */
+      "</cellXfs>" +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+      "</styleSheet>";
+
+    /* ---- sheet rows ---- */
+    var rows = [], r = 0, merges = [];
+    function push(cells) { rows.push({ i: ++r, cells: cells }); return r; }
+    function str(v, s) { return { t: "s", v: v, s: s }; }
+    function nm(v, s) { return { t: "n", v: v, s: s }; }
+    function dt(v, s) { return { t: "d", v: v, s: s }; }
+    function blank() { push([]); }
+
+    var NCOL = 9;
+    push([str(doc.company, 1)]);            merges.push("A1:" + colLetter(NCOL - 1) + "1");
+    push([str(doc.title, 2)]);              merges.push("A2:" + colLetter(NCOL - 1) + "2");
+    push([str(doc.generated, 2)]);          merges.push("A3:" + colLetter(NCOL - 1) + "3");
+    blank();
+    push([str("SUMMARY", 3)]);
+    push([str("Actual bank balance", 13), nm(doc.summary.bank, 6)]);
+    push([str("Issued, not yet cleared", 13), nm(-doc.summary.issued, 6)]);
+    push([str("Approved, not yet released", 13), nm(-doc.summary.approved, 6)]);
+    if (doc.summary.includeIncoming)
+      push([str("Expected collections counted", 13), nm(doc.summary.incoming, 6)]);
+    push([str("Projected available balance", 13),
+          nm(doc.summary.projected, doc.summary.state === "bad" ? 12 : 11)]);
+    push([str(doc.summary.bankUpdated, 2)]);
+    blank();
+
+    push([str("ALL ENTRIES", 3)]);
+    var headRow = push([
+      str("Date", 4), str("Type", 4), str("Name", 4), str("Amount", 4), str("Reference", 4),
+      str("Purpose", 4), str("Expected release", 4), str("Confidence", 4), str("Status", 4)
+    ]);
+    var first = headRow + 1;
+    doc.items.forEach(function (it) {
+      push([
+        it.date ? dt(serial(it.date), 7) : str("", 5),
+        str(it.typeLabel, 5), str(it.party, 5), nm(it.amount, 6), str(it.ref, 5),
+        str(it.purpose, 5),
+        it.expected ? dt(serial(it.expected), 7) : str("", 5),
+        str(it.confidence, 5), str(it.statusLabel, 5)
+      ]);
+    });
+    var last = r;
+    if (doc.items.length) {
+      push([str("", 0), str("", 0), str("Total", 8),
+            { t: "f", f: "SUM(D" + first + ":D" + last + ")", v: doc.itemsTotal, s: 9 }]);
+    }
+
+    var xml = rows.map(function (row) {
+      var cells = row.cells.map(function (c, ci) {
+        if (!c) return "";
+        var ref = colLetter(ci) + row.i, s = ' s="' + (c.s || 0) + '"';
+        if (c.t === "s") {
+          if (c.v === "" || c.v === null || c.v === undefined) return "<c r='" + ref + "'" + s + "/>";
+          return '<c r="' + ref + '"' + s + ' t="inlineStr"><is><t xml:space="preserve">' +
+                 x(c.v) + "</t></is></c>";
+        }
+        if (c.t === "f")
+          return '<c r="' + ref + '"' + s + "><f>" + x(c.f) + "</f><v>" + c.v + "</v></c>";
+        if (c.v === null) return '<c r="' + ref + '"' + s + "/>";
+        return '<c r="' + ref + '"' + s + "><v>" + c.v + "</v></c>";
+      }).join("");
+      return '<row r="' + row.i + '">' + cells + "</row>";
+    }).join("");
+
+    var widths = [14, 12, 32, 16, 16, 26, 16, 12, 15];
+    var cols = "<cols>" + widths.map(function (w, i) {
+      return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>';
+    }).join("") + "</cols>";
+
+    var sheet =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>' +
+      '<sheetViews><sheetView showGridLines="0" workbookViewId="0">' +
+        '<pane ySplit="' + headRow + '" topLeftCell="A' + first + '" activePane="bottomLeft" state="frozen"/>' +
+      "</sheetView></sheetViews>" +
+      '<sheetFormatPr defaultRowHeight="15"/>' + cols +
+      "<sheetData>" + xml + "</sheetData>" +
+      (doc.items.length ? '<autoFilter ref="A' + headRow + ":" + colLetter(NCOL - 1) + last + '"/>' : "") +
+      (merges.length ? '<mergeCells count="' + merges.length + '">' +
+        merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join("") + "</mergeCells>" : "") +
+      '<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>' +
+      '<pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/>' +
+      "</worksheet>";
+
+    var files = [
+      { name: "[Content_Types].xml", bytes: utf8(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+        '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+        "</Types>") },
+      { name: "_rels/.rels", bytes: utf8(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+        "</Relationships>") },
+      { name: "xl/workbook.xml", bytes: utf8(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+        '<sheets><sheet name="Cash Flow" sheetId="1" r:id="rId1"/></sheets></workbook>') },
+      { name: "xl/_rels/workbook.xml.rels", bytes: utf8(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+        '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+        "</Relationships>") },
+      { name: "xl/styles.xml", bytes: utf8(styles) },
+      { name: "xl/worksheets/sheet1.xml", bytes: utf8(sheet) }
+    ];
+    return zip(files);
+  }
+
+  /* =======================================================================
+     PDF — A4 portrait, base-14 Helvetica, no embedded fonts
+     ===================================================================== */
+  /* Adobe AFM advance widths (per 1000 units) for codes 32..126 */
+  var W_REG = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,
+    556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,
+    667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,
+    278,278,278,469,556,333,
+    556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,
+    334,260,334,584];
+  var W_BOLD = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,
+    556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,
+    722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,
+    333,278,333,584,556,333,
+    556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,
+    389,280,389,584];
+
+  /* Unicode -> WinAnsiEncoding byte, for the characters this dashboard emits */
+  var WINANSI = { 0x2212: 45, 0x2013: 150, 0x2014: 151, 0x2018: 145, 0x2019: 146,
+                  0x201c: 147, 0x201d: 148, 0x2022: 149, 0x2026: 133, 0x20ac: 128,
+                  0x00a0: 32, 0x2122: 153, 0x2039: 139, 0x203a: 155 };
+  var TRANSLIT = { 0x20b9: "Rs.", 0x20ba: "TL", 0x20bd: "RUB", 0xfdfc: "Rial" };
+
+  /* Map a JS string to an array of WinAnsi byte values. */
+  function winansi(str, report) {
+    var out = [], i, c, k;
+    str = String(str === null || str === undefined ? "" : str);
+    for (i = 0; i < str.length; i++) {
+      c = str.charCodeAt(i);
+      if (c >= 32 && c <= 126) { out.push(c); continue; }
+      if (TRANSLIT[c]) { for (k = 0; k < TRANSLIT[c].length; k++) out.push(TRANSLIT[c].charCodeAt(k)); continue; }
+      if (WINANSI[c] !== undefined) { out.push(WINANSI[c]); continue; }
+      if (c >= 160 && c <= 255) { out.push(c); continue; }
+      if (c === 9) { out.push(32); continue; }
+      if (c < 32) continue;
+      /* Outside WinAnsi (Arabic, CJK, ...): the base-14 fonts have no glyph for
+         it, so drop it rather than printing "?" all over a statement. */
+      if (report) report.dropped = true;
+      if (out.length && out[out.length - 1] !== 32) out.push(32);
+    }
+    while (out.length && out[out.length - 1] === 32) out.pop();
+    return out;
+  }
+  function hasUnsupported(str) {
+    var report = {};
+    winansi(str, report);
+    return !!report.dropped;
+  }
+  /* the string exactly as the PDF will render it */
+  function renderable(str) {
+    var b = winansi(str), out = "";
+    for (var i = 0; i < b.length; i++) out += String.fromCharCode(b[i]);
+    /* \x96/\x97 are the WinAnsi en/em dashes: drop separators left stranded
+       when the text they joined was dropped. */
+    return out.replace(/^[\s\x96\x97\-|,;:.\u00b7]+/, "")
+              .replace(/[\s\x96\x97\-|,;:\u00b7]+$/, "").trim();
+  }
+  function widthOf(bytes, size, bold) {
+    var tbl = bold ? W_BOLD : W_REG, sum = 0;
+    for (var i = 0; i < bytes.length; i++) {
+      var b = bytes[i];
+      sum += (b >= 32 && b <= 126) ? tbl[b - 32] : 556;
+    }
+    return sum * size / 1000;
+  }
+  function textWidth(str, size, bold) { return widthOf(winansi(str), size, bold); }
+  /* Escape to an ASCII-only PDF literal string, so byte offsets equal string length. */
+  function pdfStr(str) {
+    var b = winansi(str), out = "(";
+    for (var i = 0; i < b.length; i++) {
+      var c = b[i];
+      if (c === 40 || c === 41 || c === 92) out += "\\" + String.fromCharCode(c);
+      else if (c < 32 || c > 126) out += "\\" + ("00" + c.toString(8)).slice(-3);
+      else out += String.fromCharCode(c);
+    }
+    return out + ")";
+  }
+  function trackWidth(str, size, bold, track) {
+    var s = String(str);
+    return textWidth(s, size, bold) + (track || 0) * Math.max(0, s.length - 1);
+  }
+  function ellipsize(str, maxW, size, bold, track) {
+    if (trackWidth(str, maxW && size, bold, track) && trackWidth(str, size, bold, track) <= maxW) return str;
+    var s = String(str);
+    while (s.length > 1 && trackWidth(s + "...", size, bold, track) > maxW) s = s.slice(0, -1);
+    return s.replace(/[\s,;:.-]+$/, "") + "...";
+  }
+  /* greedy word wrap, used for the small notes under each summary figure */
+  function wrapLines(str, maxW, size, bold, maxLines) {
+    var words = String(str || "").split(/\s+/).filter(Boolean), lines = [], cur = "";
+    for (var i = 0; i < words.length; i++) {
+      var probe = cur ? cur + " " + words[i] : words[i];
+      if (cur && textWidth(probe, size, bold) > maxW) { lines.push(cur); cur = words[i]; }
+      else cur = probe;
+      if (lines.length === maxLines) break;
+    }
+    if (cur && lines.length < maxLines) lines.push(cur);
+    if (lines.length === maxLines) {
+      var last = lines[maxLines - 1], rest = words.slice(lines.join(" ").split(/\s+/).length);
+      if (rest.length) lines[maxLines - 1] = ellipsize(last + " " + rest.join(" "), maxW, size, bold);
+    }
+    return lines;
+  }
+  function nf(v) { return (Math.round(v * 100) / 100).toString(); }
+
+  function buildPdf(doc) {
+    var PW = 595.28, PH = 841.89, M = 42;
+    var CW = PW - M * 2;
+    var NAVY = [0.122, 0.306, 0.475], INK = [0.106, 0.122, 0.141],
+        MUTED = [0.40, 0.45, 0.50], FAINT = [0.55, 0.60, 0.65],
+        LINE = [0.886, 0.906, 0.925], BAND = [0.973, 0.980, 0.988],
+        OK = [0.059, 0.420, 0.271], WARN = [0.541, 0.353, 0.0], BAD = [0.690, 0.165, 0.125];
+    var STATE = { ok: OK, warn: WARN, bad: BAD };
+    var TINT = { ok: [0.910, 0.961, 0.933], warn: [0.992, 0.953, 0.886], bad: [0.992, 0.925, 0.918] };
+
+    var company = renderable(doc.company) || doc.title;
+    var pages = [], ops = [], y = 0;
+
+    function col(c, stroke) { return nf(c[0]) + " " + nf(c[1]) + " " + nf(c[2]) + (stroke ? " RG" : " rg"); }
+    function rect(px, py, w, h, fill, border) {
+      if (fill) ops.push(col(fill), nf(px) + " " + nf(PH - py - h) + " " + nf(w) + " " + nf(h) + " re f");
+      if (border) ops.push(col(border, true), "0.7 w",
+        nf(px) + " " + nf(PH - py - h) + " " + nf(w) + " " + nf(h) + " re S");
+    }
+    function rrect(px, py, w, h, r, fill, border) {
+      var Y = PH - py - h, k = r * 0.5523, p = [];
+      p.push(nf(px + r) + " " + nf(Y) + " m");
+      p.push(nf(px + w - r) + " " + nf(Y) + " l");
+      p.push(nf(px + w - r + k) + " " + nf(Y) + " " + nf(px + w) + " " + nf(Y + r - k) + " " + nf(px + w) + " " + nf(Y + r) + " c");
+      p.push(nf(px + w) + " " + nf(Y + h - r) + " l");
+      p.push(nf(px + w) + " " + nf(Y + h - r + k) + " " + nf(px + w - r + k) + " " + nf(Y + h) + " " + nf(px + w - r) + " " + nf(Y + h) + " c");
+      p.push(nf(px + r) + " " + nf(Y + h) + " l");
+      p.push(nf(px + r - k) + " " + nf(Y + h) + " " + nf(px) + " " + nf(Y + h - r + k) + " " + nf(px) + " " + nf(Y + h - r) + " c");
+      p.push(nf(px) + " " + nf(Y + r) + " l");
+      p.push(nf(px) + " " + nf(Y + r - k) + " " + nf(px + r - k) + " " + nf(Y) + " " + nf(px + r) + " " + nf(Y) + " c");
+      p.push("h");
+      if (fill) ops.push(col(fill));
+      if (border) ops.push(col(border, true), "0.8 w");
+      ops.push(p.join(" "), fill && border ? "B" : fill ? "f" : "S");
+    }
+    function line(x1, y1, x2, y2, c, w) {
+      ops.push(col(c || LINE, true), nf(w || 0.7) + " w",
+        nf(x1) + " " + nf(PH - y1) + " m " + nf(x2) + " " + nf(PH - y2) + " l S");
+    }
+    /* opts: {size, bold, color, align:'l'|'r'|'c', maxW, track} */
+    function text(str, px, py, o) {
+      o = o || {};
+      var size = o.size || 9, bold = !!o.bold;
+      var s = o.maxW ? ellipsize(str, o.maxW, size, bold, o.track) : String(str);
+      var w = trackWidth(s, size, bold, o.track);
+      var tx = o.align === "r" ? px - w : o.align === "c" ? px - w / 2 : px;
+      ops.push("BT", col(o.color || INK), "/" + (bold ? "F2" : "F1") + " " + nf(size) + " Tf");
+      if (o.track) ops.push(nf(o.track) + " Tc");
+      ops.push("1 0 0 1 " + nf(tx) + " " + nf(PH - py - size * 0.78) + " Tm", pdfStr(s) + " Tj");
+      if (o.track) ops.push("0 Tc");
+      ops.push("ET");
+      return w;
+    }
+    function newPage() {
+      if (ops.length) pages.push(ops);
+      ops = [];
+      y = M;
+    }
+    function space(need) { if (y + need > PH - M - 26) newPage(); }
+
+    /* ---------- page 1 header ---------- */
+    newPage();
+    text(company, M, y, { size: 17, bold: true, color: NAVY, maxW: CW - 170 });
+    text(doc.generated, PW - M, y + 3, { size: 8.5, color: FAINT, align: "r" });
+    y += 21;
+    text(doc.title, M, y, { size: 10.5, color: MUTED });
+    y += 16;
+    line(M, y, PW - M, y, NAVY, 1.1);
+    y += 18;
+
+    /* ---------- summary cards ---------- */
+    var cards = [
+      { label: "ACTUAL BANK BALANCE", value: doc.f(doc.summary.bank), note: doc.summary.bankUpdated },
+      { label: "ISSUED, NOT YET CLEARED", value: "- " + doc.f(doc.summary.issued), note: doc.summary.issuedNote },
+      { label: "APPROVED, NOT YET RELEASED", value: "- " + doc.f(doc.summary.approved), note: doc.summary.approvedNote },
+      { label: "PROJECTED AVAILABLE BALANCE", value: doc.f(doc.summary.projected),
+        note: doc.summary.projNote, state: doc.summary.state }
+    ];
+    var gap = 9, cw = (CW - gap * 3) / 4, chh = 68, inner = cw - 18;
+    cards.forEach(function (c, i) {
+      var cx = M + i * (cw + gap), accent = c.state ? STATE[c.state] : null;
+      rrect(cx, y, cw, chh, 4, c.state ? TINT[c.state] : [1, 1, 1], accent || LINE);
+      var ls = 6.1, tr = 0.32;
+      while (ls > 4.6 && trackWidth(c.label, ls, true, tr) > inner) ls -= 0.15;
+      text(c.label, cx + 9, y + 9, { size: ls, bold: true, color: accent || MUTED, track: tr });
+      var vs = 13.5;
+      while (vs > 8 && textWidth(c.value, vs, true) > inner) vs -= 0.5;
+      text(c.value, cx + 9, y + 22, { size: vs, bold: true, color: accent || INK, maxW: inner });
+      wrapLines(c.note || "", inner, 6.3, false, 2).forEach(function (ln, k) {
+        text(ln, cx + 9, y + 44 + k * 8, { size: 6.3, color: FAINT });
+      });
+    });
+    y += chh + 12;
+    text(doc.summary.formula, M, y, { size: 8, color: FAINT, maxW: CW });
+    y += 20;
+
+    /* ---------- sections ---------- */
+    var CX = [M, M + 66, M + 214, M + 366, M + 452];      /* date, name, details, amount(right), status */
+    var CEND = M + CW;
+    function tableHead() {
+      rect(M, y, CW, 15, BAND, null);
+      line(M, y + 15, CEND, y + 15, LINE, 0.7);
+      var o = { size: 6.3, bold: true, color: MUTED, track: 0.3 };
+      text("DATE", CX[0] + 4, y + 4.5, o);
+      text("NAME", CX[1], y + 4.5, o);
+      text("DETAILS", CX[2], y + 4.5, o);
+      text("AMOUNT", CX[4] - 10, y + 4.5, { size: 6.3, bold: true, color: MUTED, track: 0.3, align: "r" });
+      text("STATUS", CX[4] + 6, y + 4.5, o);
+      y += 15;
+    }
+    doc.sections.forEach(function (sec) {
+      if (!sec.rows.length) return;
+      space(64);
+      text(sec.title, M, y, { size: 10, bold: true, color: NAVY });
+      text(sec.rows.length + (sec.rows.length === 1 ? " item" : " items"),
+           CEND, y + 1, { size: 8, color: FAINT, align: "r" });
+      y += 14;
+      tableHead();
+      sec.rows.forEach(function (row, i) {
+        if (y + 17 > PH - M - 26) {
+          newPage();
+          text(sec.title + " (continued)", M, y, { size: 10, bold: true, color: NAVY });
+          y += 14;
+          tableHead();
+        }
+        if (i % 2 === 1) rect(M, y, CW, 16, BAND, null);
+        text(row.date, CX[0] + 4, y + 4.4, { size: 8.2, color: MUTED, maxW: 60 });
+        text(row.party, CX[1], y + 4.2, { size: 8.6, bold: true, maxW: CX[2] - CX[1] - 8 });
+        text(row.details, CX[2], y + 4.4, { size: 8, color: MUTED, maxW: CX[3] - CX[2] - 8 });
+        text(row.amount, CX[4] - 10, y + 4.2, { size: 8.6, align: "r" });
+        text(row.status, CX[4] + 6, y + 4.4, { size: 7.8, color: row.late ? BAD : MUTED, maxW: CEND - CX[4] - 8 });
+        y += 16;
+        line(M, y, CEND, y, LINE, 0.4);
+      });
+      line(M, y, CEND, y, [0.75, 0.79, 0.83], 0.9);
+      y += 5;
+      text("Subtotal", CX[2], y, { size: 8.6, bold: true, color: MUTED });
+      text(sec.total, CX[4] - 10, y, { size: 9.4, bold: true, align: "r" });
+      y += 22;
+    });
+
+    if (!doc.sections.some(function (s) { return s.rows.length; })) {
+      text("No entries recorded yet.", M, y, { size: 9.5, color: MUTED });
+      y += 16;
+    }
+    pages.push(ops);
+
+    /* ---------- footers ---------- */
+    pages.forEach(function (page, i) {
+      var fy = PH - M + 4;
+      var saved = ops; ops = page;
+      line(M, fy - 8, PW - M, fy - 8, LINE, 0.6);
+      text(company + " — " + doc.title, M, fy, { size: 7.2, color: FAINT, maxW: CW - 90 });
+      text("Page " + (i + 1) + " of " + pages.length, PW - M, fy, { size: 7.2, color: FAINT, align: "r" });
+      ops = saved;
+    });
+
+    /* ---------- assemble ---------- */
+    var objs = [], nPages = pages.length;
+    var kids = [];
+    for (var i = 0; i < nPages; i++) kids.push((4 + i * 2) + " 0 R");
+    objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+    objs[2] = "<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + nPages + " >>";
+    objs[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+    var boldObj = 4 + nPages * 2;
+    for (i = 0; i < nPages; i++) {
+      var content = pages[i].join("\n");
+      objs[4 + i * 2] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + nf(PW) + " " + nf(PH) +
+        "] /Resources << /Font << /F1 3 0 R /F2 " + boldObj + " 0 R >> >> /Contents " +
+        (5 + i * 2) + " 0 R >>";
+      objs[5 + i * 2] = "<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream";
+    }
+    objs[boldObj] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+    objs[boldObj + 1] = "<< /Title " + pdfStr(company + " — " + doc.title) +
+      " /Producer (Cash Flow Control Dashboard) /Creator (Cash Flow Control Dashboard) >>";
+
+    var out = "%PDF-1.4\n", offsets = [], n;
+    for (n = 1; n <= boldObj + 1; n++) {
+      offsets[n] = out.length;
+      out += n + " 0 obj\n" + objs[n] + "\nendobj\n";
+    }
+    var xref = out.length;
+    out += "xref\n0 " + (boldObj + 2) + "\n0000000000 65535 f \n";
+    for (n = 1; n <= boldObj + 1; n++)
+      out += ("0000000000" + offsets[n]).slice(-10) + " 00000 n \n";
+    out += "trailer\n<< /Size " + (boldObj + 2) + " /Root 1 0 R /Info " + (boldObj + 1) +
+           " 0 R >>\nstartxref\n" + xref + "\n%%EOF\n";
+    return latin1(out);
+  }
+
+  return { buildXlsx: buildXlsx, buildPdf: buildPdf, zip: zip, crc32: crc32,
+           textWidth: textWidth, winansi: winansi, hasUnsupported: hasUnsupported,
+           renderable: renderable };
+})();
+/* ===== WRITERS-END ===== */
 </script>
 
 <script>
@@ -1365,28 +1964,136 @@ var App = (function () {
     lines.push(["Bank Balance", "", "", num(state.bankBalance).toFixed(2)].map(csvCell).join(","));
     return lines.join("\r\n");
   }
+  /* Assemble everything the .xlsx and .pdf writers need. Summary wording is
+     read back off the rendered cards so the documents always match the screen. */
+  function buildDoc() {
+    var t = totals();
+    var order = { issued: 0, approved: 1, incoming: 2 };
+    var sorted = state.items.slice().sort(function (a, b) {
+      if (order[a.kind] !== order[b.kind]) return order[a.kind] - order[b.kind];
+      return (a.date || "") < (b.date || "") ? -1 : 1;
+    });
+    function rowsFor(pick) {
+      return sorted.filter(pick).map(function (it) {
+        var due = it.kind === "approved" ? (it.expected || it.date) : it.date;
+        var d = daysBetween(due);
+        var bits = [];
+        if (it.ref) bits.push("Ref " + it.ref);
+        if (it.purpose) bits.push(it.purpose);
+        if (it.kind === "approved" && it.expected) bits.push("release by " + fmtDate(it.expected));
+        if (it.kind === "incoming") bits.push(it.confidence + " confidence");
+        if (!isOpen(it) && it.settledOn) bits.push("on " + fmtDate(it.settledOn));
+        return {
+          date: fmtDate(it.date), party: it.party || "—", details: bits.join(" · "),
+          amount: money(it.amount), status: statusLabel(it),
+          late: isOpen(it) && it.kind !== "issued" && d !== null && d < 0
+        };
+      });
+    }
+    function section(title, pick) {
+      var items = sorted.filter(pick);
+      return { title: title, rows: rowsFor(pick),
+               total: money(items.reduce(function (a, i) { return a + num(i.amount); }, 0)) };
+    }
+    return {
+      company: state.companyName || "My Company",
+      title: "Cash Flow Position Statement",
+      generated: "Generated " + stamp(),
+      currency: state.currency,
+      f: function (n) { return money(n); },
+      summary: {
+        bank: t.bank, issued: t.issued, approved: t.approved,
+        incoming: t.incoming, includeIncoming: !!state.includeIncoming,
+        projected: t.projected,
+        state: t.projected < 0 ? "bad"
+             : (num(state.warnThreshold) > 0 && t.projected < num(state.warnThreshold)) ? "warn" : "ok",
+        bankUpdated: el("cBankNote").textContent,
+        issuedNote: el("cIssuedNote").textContent,
+        approvedNote: el("cApprovedNote").textContent,
+        projNote: el("cProjNote").textContent,
+        formula: el("formulaLine").textContent
+      },
+      sections: [
+        section("Issued — not yet cleared", function (i) { return i.kind === "issued" && i.status === "uncleared"; }),
+        section("Approved — not yet released", function (i) { return i.kind === "approved" && i.status === "pending"; }),
+        section("Expected incoming collections", function (i) { return i.kind === "incoming" && i.status === "expected"; }),
+        section("Completed", function (i) { return !isOpen(i); })
+      ],
+      items: sorted.map(function (it) {
+        return { date: it.date, typeLabel: KINDS[it.kind].label, party: it.party,
+                 amount: num(it.amount), ref: it.ref, purpose: it.purpose,
+                 expected: it.expected, confidence: it.kind === "incoming" ? it.confidence : "",
+                 statusLabel: statusLabel(it) };
+      }),
+      itemsTotal: sorted.reduce(function (a, i) { return a + num(i.amount); }, 0)
+    };
+  }
+
+  /* true when any of the user's own text cannot be drawn with the PDF base fonts */
+  function pdfDropsText() {
+    var probe = [state.companyName];
+    state.items.forEach(function (i) { probe.push(i.party, i.purpose, i.ref); });
+    return Writers.hasUnsupported(probe.join(" "));
+  }
+
   function exportModal() {
+    function opt(id, title, desc, label) {
+      return '<div class="optrow"><div class="t"><b>' + h(title) + "</b><span>" + desc + "</span></div>" +
+             '<button class="btn" id="' + id + '">' + h(label) + "</button></div>";
+    }
     var body =
-      '<p style="margin:0">Save a copy of your data as a file you can keep as a backup, ' +
-        "or send to a colleague so they can load it on their own computer.</p>" +
-      '<div class="note-box"><b>Backup file (.json)</b> &mdash; keeps everything exactly, ' +
-        "including statuses and settings. Use this one to move data between people or devices.</div>" +
-      '<div class="note-box"><b>Spreadsheet file (.csv)</b> &mdash; opens in Excel. ' +
-        "Good for printing, sharing or editing. You can edit it and upload it back in.</div>";
-    var foot = '<button class="btn" data-close="1">Cancel</button><span class="spacer"></span>' +
-               '<button class="btn" id="eCsv">Download .csv</button>' +
-               '<button class="btn primary" id="eJson">Download .json backup</button>';
-    openModal(modalShell("Export data", body, foot));
+      '<p style="margin:0;color:var(--muted)">Save a copy of your data — keep it as a backup, ' +
+        "print it, or send it to a colleague.</p>" +
+      opt("eXlsx", "Excel workbook (.xlsx)",
+          "Formatted summary and a filterable table, with totals. Opens in Excel, Numbers or Google Sheets.",
+          "Download") +
+      opt("ePdf", "PDF statement (.pdf)",
+          "A clean printable statement: the four figures, then every entry grouped with subtotals." +
+          (pdfDropsText() ? '<br><b style="color:var(--warn)">Note:</b> the PDF can only print ' +
+            "Latin letters, so Arabic or other non-Latin names will be left out of it. " +
+            "The Excel and backup files keep them exactly." : ""),
+          "Download") +
+      opt("eJson", "Backup file (.json)",
+          "An exact copy including statuses and settings. Use this one to move data between people or devices.",
+          "Download") +
+      opt("eCsv", "Plain spreadsheet (.csv)",
+          "Simple and editable, and can be uploaded straight back into this dashboard.",
+          "Download") +
+      '<div class="note-box bad" id="expErr" hidden></div>';
+    openModal(modalShell("Export data", body, '<button class="btn primary" data-close="1">Close</button>'));
+
+    function guard(fn, done) {
+      try { fn(); closeModal(); toast(done); }
+      catch (e) {
+        var b = el("expErr");
+        b.hidden = false;
+        b.textContent = "Sorry — that file could not be created. " + (e && e.message ? e.message : "");
+      }
+    }
+    el("eXlsx").addEventListener("click", function () {
+      guard(function () {
+        download(slug() + "-cashflow-" + todayISO() + ".xlsx", Writers.buildXlsx(buildDoc()),
+                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      }, "Excel workbook downloaded.");
+    });
+    el("ePdf").addEventListener("click", function () {
+      guard(function () {
+        download(slug() + "-cashflow-" + todayISO() + ".pdf", Writers.buildPdf(buildDoc()),
+                 "application/pdf");
+      }, "PDF statement downloaded.");
+    });
     el("eJson").addEventListener("click", function () {
-      var payload = { format: "cash-flow-control", version: 1,
-                      exportedAt: new Date().toISOString(), data: state };
-      download(slug() + "-cashflow-" + todayISO() + ".json",
-               JSON.stringify(payload, null, 2), "application/json");
-      closeModal(); toast("Backup downloaded.");
+      guard(function () {
+        var payload = { format: "cash-flow-control", version: 1,
+                        exportedAt: new Date().toISOString(), data: state };
+        download(slug() + "-cashflow-" + todayISO() + ".json",
+                 JSON.stringify(payload, null, 2), "application/json");
+      }, "Backup downloaded.");
     });
     el("eCsv").addEventListener("click", function () {
-      download(slug() + "-cashflow-" + todayISO() + ".csv", "﻿" + toCsv(), "text/csv");
-      closeModal(); toast("Spreadsheet downloaded.");
+      guard(function () {
+        download(slug() + "-cashflow-" + todayISO() + ".csv", "\ufeff" + toCsv(), "text/csv");
+      }, "Spreadsheet downloaded.");
     });
   }
 
