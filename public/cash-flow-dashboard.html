@@ -57,7 +57,7 @@ input,select,textarea{font:inherit;color:inherit}
 .card .label{font-size:12px;color:var(--muted);text-transform:uppercase;
   letter-spacing:.05em;font-weight:600;display:flex;align-items:center;gap:6px}
 .card .value{font-size:26px;font-weight:650;margin-top:8px;letter-spacing:-.02em;
-  overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+  white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}
 .card .note{font-size:12px;color:var(--faint);margin-top:6px;min-height:16px}
 .card.minus .value{color:#7a2f28}
 .card.plus .value{color:var(--ok)}
@@ -69,7 +69,7 @@ input,select,textarea{font:inherit;color:inherit}
 .card.headline.state-warn .value{color:var(--warn)}
 .card.headline.state-bad{border-color:var(--bad-line);background:var(--bad-bg)}
 .card.headline.state-bad .value{color:var(--bad)}
-.formula{color:var(--faint);font-size:12px;margin:2px 0 16px;overflow-wrap:anywhere}
+.formula{color:var(--faint);font-size:12px;margin:2px 0 16px}
 
 /* ---------- panels ---------- */
 .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
@@ -940,6 +940,7 @@ var App = (function () {
     el("incHorizon").value = String(state.incomingHorizon);
     el("incOptions").style.opacity = state.includeIncoming ? "1" : ".55";
     el("incMode").disabled = el("incHorizon").disabled = !state.includeIncoming;
+    fitCards();
     el("incSummary").textContent = !state.includeIncoming
       ? "Not counted — switch on above"
       : t.incomingN
@@ -1056,6 +1057,21 @@ var App = (function () {
   }
   function btn(act, id, label) {
     return '<button class="btn sm" data-act="' + act + '" data-id="' + h(id) + '">' + h(label) + "</button>";
+  }
+  /* Money must never break across lines, so scale a long figure down until it
+     fits its card rather than wrapping mid-number. */
+  function fit(node, base) {
+    node.style.fontSize = base + "px";
+    if (!node.clientWidth) return;
+    var size = base;
+    while (size > 11 && node.scrollWidth > node.clientWidth + 1) {
+      size -= 1;
+      node.style.fontSize = size + "px";
+    }
+  }
+  function fitCards() {
+    fit(el("cBank"), 26); fit(el("cIssued"), 26);
+    fit(el("cApproved"), 26); fit(el("cProjected"), 30);
   }
   function render() { renderSummary(); renderTable(); }
 
@@ -1929,6 +1945,13 @@ var App = (function () {
       var f = this.files && this.files[0];
       if (!f) return;
       if (fileMode === "sheet") readSheetFile(f); else readBackupFile(f);
+    });
+
+    var fitPending = false;
+    window.addEventListener("resize", function () {
+      if (fitPending) return;
+      fitPending = true;
+      requestAnimationFrame(function () { fitPending = false; fitCards(); });
     });
 
     el("incToggle").addEventListener("change", function () {
