@@ -109,6 +109,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
   color:var(--accent);font-weight:600}
 .search{max-width:230px}
 
+.selcol{width:36px;padding-right:0}
+input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;margin:0}
+.bulkbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  padding:10px 15px;background:var(--accent-soft);border-bottom:1px solid #b9d0e4}
+.bulkbar .count{font-weight:650;color:var(--accent)}
+.bulkbar .sum{color:var(--muted)}
+.bulkbar .spacer{flex:1}
 .tablewrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -187,7 +194,8 @@ tr.done td{color:var(--muted)}
   z-index:80;max-width:90vw;text-align:center}
 .toast[hidden]{display:none}
 @media print{
-  .topbtns,.rowacts,.chips,.search,.btn,.panel-head .spacer{display:none!important}
+  .topbtns,.rowacts,.chips,.search,.btn,.panel-head .spacer,
+  .selcol,.bulkbar{display:none!important}
   body{background:#fff}.card,.panel{box-shadow:none}
 }
 </style>
@@ -289,10 +297,21 @@ tr.done td{color:var(--muted)}
       <span class="spacer"></span>
       <input type="text" class="search" id="searchBox" placeholder="Search name or reference" aria-label="Search entries">
     </div>
+    <div class="bulkbar" id="bulkBar" hidden>
+      <span class="count" id="bulkCount"></span>
+      <span class="sum" id="bulkSum"></span>
+      <span class="spacer"></span>
+      <button class="btn sm" id="bulkClear" hidden></button>
+      <button class="btn sm" id="bulkRelease" hidden></button>
+      <button class="btn sm" id="bulkReceive" hidden></button>
+      <button class="btn sm danger" id="bulkDelete"></button>
+      <button class="btn sm" id="bulkNone">Clear selection</button>
+    </div>
     <div class="tablewrap" id="tableWrap">
       <table id="itemsTable">
         <thead>
           <tr>
+            <th class="selcol"><input type="checkbox" id="selAll" aria-label="Select all shown entries"></th>
             <th class="sortable" data-sort="date">Date <span class="arrow">&#9660;</span></th>
             <th class="sortable" data-sort="kind">Type <span class="arrow">&#9660;</span></th>
             <th class="sortable" data-sort="party">Name <span class="arrow">&#9660;</span></th>
@@ -1340,7 +1359,8 @@ var App = (function () {
   };
 
   var state = defaults();
-  var view = { filter: "open", sortKey: "date", sortDir: "desc", search: "" };
+  var view = { filter: "open", sortKey: "date", sortDir: "desc", search: "",
+               selected: {}, lastIdx: -1 };
   var storageOk = true;
 
   function defaults() {
@@ -1603,7 +1623,7 @@ var App = (function () {
     } else {
       el("tableWrap").hidden = false;
       el("emptyState").hidden = true;
-      list.forEach(function (it) {
+      list.forEach(function (it, idx) {
         var open = isOpen(it), due = it.kind === "approved" ? (it.expected || it.date) : it.date;
         var late = open && it.kind !== "issued" && daysBetween(due) !== null && daysBetween(due) < 0;
         var detail = [];
@@ -1623,6 +1643,9 @@ var App = (function () {
 
         rows.push(
           '<tr class="' + (open ? "" : "done") + '">' +
+          '<td class="selcol"><input type="checkbox" data-sel="1" data-id="' + h(it.id) +
+            '" data-idx="' + idx + '"' + (view.selected[it.id] ? " checked" : "") +
+            ' aria-label="Select ' + h(it.party || "entry") + '"></td>' +
           "<td>" + h(fmtDate(it.date)) + "</td>" +
           "<td>" + h(KINDS[it.kind].label) + "</td>" +
           '<td><div class="party">' + h(it.party || "—") + "</div>" +
@@ -1653,7 +1676,55 @@ var App = (function () {
     Array.prototype.forEach.call(document.querySelectorAll("#filterChips .chip"), function (c) {
       c.setAttribute("aria-pressed", String(c.dataset.filter === view.filter));
     });
+    syncSelection(list);
   }
+  /* ---------------- multi-select ---------------- */
+  function selectedItems() {
+    return state.items.filter(function (it) { return view.selected[it.id]; });
+  }
+  function clearSelection() { view.selected = {}; view.lastIdx = -1; }
+  /* Update only the checkboxes and the bulk bar. Re-rendering the whole table
+     on every tick would throw away keyboard focus. */
+  function refreshSelectionUI() {
+    Array.prototype.forEach.call(el("itemsBody").querySelectorAll("input[data-sel]"),
+      function (box) { box.checked = !!view.selected[box.dataset.id]; });
+    syncSelection(visibleItems());
+  }
+  function syncSelection(list) {
+    /* drop ids that are no longer visible or no longer exist */
+    var shown = {};
+    list.forEach(function (it) { shown[it.id] = true; });
+    Object.keys(view.selected).forEach(function (id) { if (!shown[id]) delete view.selected[id]; });
+
+    var n = 0;
+    list.forEach(function (it) { if (view.selected[it.id]) n++; });
+    var all = el("selAll");
+    all.checked = n > 0 && n === list.length;
+    all.indeterminate = n > 0 && n < list.length;
+    all.disabled = !list.length;
+
+    var sel = selectedItems();
+    var bar = el("bulkBar");
+    if (!sel.length) { bar.hidden = true; return; }
+    bar.hidden = false;
+    var total = sel.reduce(function (a, it) { return a + num(it.amount); }, 0);
+    el("bulkCount").textContent = sel.length + (sel.length === 1 ? " entry selected" : " entries selected");
+    el("bulkSum").textContent = "· " + money(total);
+
+    function setBtn(id, count, label) {
+      var b = el(id);
+      b.hidden = !count;
+      if (count) b.textContent = label + " (" + count + ")";
+    }
+    var nClear = sel.filter(function (i) { return i.kind === "issued" && i.status === "uncleared"; }).length;
+    var nRel   = sel.filter(function (i) { return i.kind === "approved" && i.status === "pending"; }).length;
+    var nRec   = sel.filter(function (i) { return i.kind === "incoming" && i.status === "expected"; }).length;
+    setBtn("bulkClear", nClear, "Mark cleared");
+    setBtn("bulkRelease", nRel, "Mark released");
+    setBtn("bulkReceive", nRec, "Mark received");
+    el("bulkDelete").textContent = "Delete (" + sel.length + ")";
+  }
+
   function btn(act, id, label) {
     return '<button class="btn sm" data-act="' + act + '" data-id="' + h(id) + '">' + h(label) + "</button>";
   }
@@ -1852,6 +1923,93 @@ var App = (function () {
     });
   }
 
+  /* ---------------- bulk actions ---------------- */
+  function bulkClearModal(items) {
+    var total = items.reduce(function (a, i) { return a + num(i.amount); }, 0);
+    var newBal = num(state.bankBalance) - total;
+    var body =
+      '<div class="note-box">' + items.length + " cheque" + (items.length === 1 ? "" : "s") +
+        " / payment" + (items.length === 1 ? "" : "s") + " totalling <b>" + h(money(total)) + "</b></div>" +
+      '<div class="preview"><table><tbody>' + items.slice(0, 40).map(function (i) {
+        return "<tr><td>" + h(fmtDate(i.date)) + "</td><td>" + h(i.party) + "</td><td>" +
+               h(i.ref || "") + '</td><td style="text-align:right">' + h(money(i.amount)) + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      (items.length > 40 ? '<div class="hint">…and ' + (items.length - 40) + " more</div>" : "") +
+      '<div class="field"><label for="bcDate">Date they cleared the bank</label>' +
+        '<input type="date" id="bcDate" value="' + todayISO() + '"></div>' +
+      '<label class="switch" style="align-items:flex-start">' +
+        '<input type="checkbox" id="bcAdjust" checked><span class="track"></span>' +
+        "<span>Reduce the bank balance by " + h(money(total)) +
+        "<br><span class='hint'>New bank balance: " + h(money(newBal)) +
+        ". Untick if your bank balance already includes these.</span></span></label>";
+    openModal(modalShell("Mark " + items.length + " as cleared", body,
+      '<button class="btn" data-close="1">Cancel</button>' +
+      '<button class="btn primary" id="bcGo">Mark as cleared</button>'));
+    el("bcGo").addEventListener("click", function () {
+      var when = el("bcDate").value || todayISO(), adjust = el("bcAdjust").checked;
+      items.forEach(function (it) { it.status = "cleared"; it.settledOn = when; });
+      if (adjust) {
+        state.bankBalance = num(state.bankBalance) - total;
+        state.bankUpdatedAt = stamp() + " (after clearing " + items.length + " payments)";
+      }
+      clearSelection(); save(); render(); closeModal();
+      toast(items.length + " marked as cleared.");
+    });
+  }
+
+  function bulkSimpleModal(items, opts) {
+    var total = items.reduce(function (a, i) { return a + num(i.amount); }, 0);
+    var newBal = num(state.bankBalance) + total;
+    var body =
+      '<div class="note-box">' + items.length + " " + opts.noun +
+        " totalling <b>" + h(money(total)) + "</b></div>" +
+      (opts.explain ? '<p style="margin:0;color:var(--muted)">' + opts.explain + "</p>" : "") +
+      '<div class="field"><label for="bsDate">' + h(opts.dateLabel) + "</label>" +
+        '<input type="date" id="bsDate" value="' + todayISO() + '"></div>' +
+      (opts.addToBank
+        ? '<label class="switch" style="align-items:flex-start">' +
+          '<input type="checkbox" id="bsAdjust" checked><span class="track"></span>' +
+          "<span>Add " + h(money(total)) + " to the bank balance" +
+          "<br><span class='hint'>New bank balance: " + h(money(newBal)) + "</span></span></label>"
+        : "");
+    openModal(modalShell(opts.title, body,
+      '<button class="btn" data-close="1">Cancel</button>' +
+      '<button class="btn primary" id="bsGo">' + h(opts.confirm) + "</button>"));
+    el("bsGo").addEventListener("click", function () {
+      var when = el("bsDate").value || todayISO();
+      items.forEach(function (it) { opts.apply(it, when); });
+      if (opts.addToBank && el("bsAdjust").checked) {
+        state.bankBalance = num(state.bankBalance) + total;
+        state.bankUpdatedAt = stamp() + " (after receiving " + items.length + " collections)";
+      }
+      clearSelection(); save(); render(); closeModal();
+      toast(opts.done.replace("{n}", items.length));
+    });
+  }
+
+  function bulkDeleteModal(items) {
+    var total = items.reduce(function (a, i) { return a + num(i.amount); }, 0);
+    var body =
+      '<div class="note-box bad">This permanently deletes <b>' + items.length + " entr" +
+        (items.length === 1 ? "y" : "ies") + "</b> totalling <b>" + h(money(total)) +
+        "</b>. It cannot be undone.</div>" +
+      '<div class="preview"><table><tbody>' + items.slice(0, 40).map(function (i) {
+        return "<tr><td>" + h(fmtDate(i.date)) + "</td><td>" + h(KINDS[i.kind].label) + "</td><td>" +
+               h(i.party) + '</td><td style="text-align:right">' + h(money(i.amount)) + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      (items.length > 40 ? '<div class="hint">…and ' + (items.length - 40) + " more</div>" : "");
+    openModal(modalShell("Delete " + items.length + " entr" + (items.length === 1 ? "y" : "ies"), body,
+      '<button class="btn" data-close="1">Cancel</button>' +
+      '<button class="btn solid-danger" id="bdGo">Delete permanently</button>'));
+    el("bdGo").addEventListener("click", function () {
+      var kill = {};
+      items.forEach(function (i) { kill[i.id] = true; });
+      state.items = state.items.filter(function (i) { return !kill[i.id]; });
+      clearSelection(); save(); render(); closeModal();
+      toast(items.length + " entries deleted.");
+    });
+  }
+
   /* ---------------- bank balance ---------------- */
   function balanceModal() {
     var body =
@@ -1927,6 +2085,7 @@ var App = (function () {
     el("rOk").addEventListener("change", function () { el("rGo").disabled = !this.checked; });
     el("rGo").addEventListener("click", function () {
       state = defaults();
+      clearSelection();
       try { localStorage.removeItem(KEY); } catch (e) {}
       save(); render(); closeModal();
       toast("All data cleared.");
@@ -2671,14 +2830,74 @@ var App = (function () {
       state.incomingHorizon = num(this.value); save(); render();
     });
 
+    /* changing what is shown clears the selection, so a bulk action can never
+       reach an entry the user cannot currently see */
     el("filterChips").addEventListener("click", function (e) {
       var c = e.target.closest("[data-filter]");
       if (!c) return;
       view.filter = c.dataset.filter;
+      clearSelection();
       renderTable();
     });
     el("searchBox").addEventListener("input", function () {
-      view.search = this.value; renderTable();
+      view.search = this.value; clearSelection(); renderTable();
+    });
+
+    el("selAll").addEventListener("change", function () {
+      var list = visibleItems(), on = this.checked;
+      clearSelection();
+      if (on) list.forEach(function (it) { view.selected[it.id] = true; });
+      refreshSelectionUI();
+    });
+    /* click, not change: only the click event carries shiftKey for range select */
+    el("itemsBody").addEventListener("click", function (e) {
+      var box = e.target.closest("input[data-sel]");
+      if (!box) return;
+      var idx = Number(box.dataset.idx), on = box.checked;
+      if (e.shiftKey && view.lastIdx >= 0 && view.lastIdx !== idx) {
+        var list = visibleItems();
+        var a = Math.min(view.lastIdx, idx), b = Math.max(view.lastIdx, idx);
+        for (var i = a; i <= b; i++) {
+          if (!list[i]) continue;
+          if (on) view.selected[list[i].id] = true; else delete view.selected[list[i].id];
+        }
+      } else if (on) view.selected[box.dataset.id] = true;
+      else delete view.selected[box.dataset.id];
+      view.lastIdx = idx;
+      refreshSelectionUI();
+    });
+
+    el("bulkNone").addEventListener("click", function () { clearSelection(); refreshSelectionUI(); });
+    el("bulkClear").addEventListener("click", function () {
+      bulkClearModal(selectedItems().filter(function (i) {
+        return i.kind === "issued" && i.status === "uncleared"; }));
+    });
+    el("bulkRelease").addEventListener("click", function () {
+      bulkSimpleModal(selectedItems().filter(function (i) {
+        return i.kind === "approved" && i.status === "pending"; }), {
+        title: "Mark approved payments as released",
+        noun: "approved payment(s)",
+        explain: "These move to &ldquo;issued but not yet cleared&rdquo;, so they still reduce " +
+                 "your projected balance. Add cheque numbers individually afterwards if you need them.",
+        dateLabel: "Date released", confirm: "Mark as released",
+        done: "{n} released — now shown as issued but not yet cleared.",
+        apply: function (it, when) {
+          it.kind = "issued"; it.status = "uncleared"; it.date = when; it.expected = "";
+        }
+      });
+    });
+    el("bulkReceive").addEventListener("click", function () {
+      bulkSimpleModal(selectedItems().filter(function (i) {
+        return i.kind === "incoming" && i.status === "expected"; }), {
+        title: "Mark collections as received",
+        noun: "expected collection(s)", dateLabel: "Date received",
+        confirm: "Mark as received", addToBank: true,
+        done: "{n} marked as received.",
+        apply: function (it, when) { it.status = "received"; it.settledOn = when; }
+      });
+    });
+    el("bulkDelete").addEventListener("click", function () {
+      bulkDeleteModal(selectedItems());
     });
     document.querySelector("#itemsTable thead").addEventListener("click", function (e) {
       var th = e.target.closest("th.sortable");
