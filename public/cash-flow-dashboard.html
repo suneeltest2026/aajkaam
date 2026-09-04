@@ -747,8 +747,8 @@ var App = (function () {
   function defaults() {
     return {
       companyName: "My Company",
-      currency: "₹",
-      grouping: "in",              /* "in" = 12,34,567.89   "intl" = 1,234,567.89 */
+      currency: "AED",
+      grouping: "intl",            /* "intl" = 1,234,567.89   "in" = 12,34,567.89 */
       bankBalance: 0,
       bankUpdatedAt: "",
       warnThreshold: 0,
@@ -1276,8 +1276,8 @@ var App = (function () {
         '<div class="field"><label for="sCur">Currency symbol</label>' +
           '<input type="text" id="sCur" value="' + h(state.currency) + '" maxlength="4"></div>' +
         '<div class="field"><label for="sGrp">Number style</label><select id="sGrp">' +
-          '<option value="in"' + (state.grouping === "in" ? " selected" : "") + ">12,34,567.89 (Indian)</option>" +
           '<option value="intl"' + (state.grouping === "intl" ? " selected" : "") + ">1,234,567.89 (International)</option>" +
+          '<option value="in"' + (state.grouping === "in" ? " selected" : "") + ">12,34,567.89 (Indian)</option>" +
         "</select></div></div>" +
       '<div class="field"><label for="sWarn">Warn me when the projected balance falls below</label>' +
         '<input type="text" id="sWarn" inputmode="decimal" value="' + h(String(state.warnThreshold)) + '">' +
@@ -1287,7 +1287,7 @@ var App = (function () {
     openModal(modalShell("Settings", body, foot));
     el("sGo").addEventListener("click", function () {
       state.companyName = el("sName").value.trim() || "My Company";
-      state.currency = el("sCur").value.trim() || "₹";
+      state.currency = el("sCur").value.trim() || "AED";
       state.grouping = el("sGrp").value;
       var w = parseAmount(el("sWarn").value);
       state.warnThreshold = isFinite(w) ? Math.abs(w) : 0;
@@ -1428,7 +1428,7 @@ var App = (function () {
     if (/^[-+]?\d*\.?\d+e[-+]?\d+$/i.test(s)) { var e = parseFloat(s); return isFinite(e) ? e : NaN; }
     var neg = /^\(.*\)$/.test(s) || /(^|\s)(dr|debit)\.?$/i.test(s) || /^-/.test(s);
     s = s.replace(/[()]/g, "").replace(/(dr|cr|debit|credit)\.?$/i, "");
-    s = s.replace(/^\s*[a-z]+[a-z\s]*\.\s*/i, "");   /* drop an "Rs." / "INR." prefix */
+    s = s.replace(/^[^\d.,\-]+\.\s*/, "");   /* drop an "AED." / "Rs." / "د.إ" prefix */
     s = s.replace(/[^0-9.,\-]/g, "");
     /* "1234,56" (comma used as the decimal point) */
     if (/^-?\d+,\d{1,2}$/.test(s) && s.indexOf(".") < 0) s = s.replace(",", ".");
