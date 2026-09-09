@@ -499,7 +499,7 @@ function defaults(){
       done:{label:"Finished",    icon:"✅"}
     },
     cheer:"Great job! Successfully completed 🎉",
-    theme:"light",
+    theme: prefersDark() ? "dark" : "light",
     tasks:[],
     seeded:false
   };
@@ -524,6 +524,16 @@ function seedTasks(){
 }
 
 function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* first run only: start in whatever mode the phone or computer is already using */
+function prefersDark(){
+  try{
+    var stamped = document.documentElement.getAttribute("data-theme");
+    if(stamped === "dark") return true;
+    if(stamped === "light") return false;
+    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }catch(e){ return false; }
+}
 
 /* ============ state ============ */
 var state = load();
