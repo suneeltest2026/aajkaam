@@ -246,41 +246,56 @@ a,label,.chip,.row-item,.mstat,.tag{touch-action:manipulation}
 }
 .sub-chips .chip{font-size:12px}
 
-/* ---------- task rows ---------- */
-.list{display:flex; flex-direction:column; gap:7px}
+/* ---------- task rows: one line each ---------- */
+.list{display:flex; flex-direction:column; gap:6px}
 .task{
   --accent-row:var(--accent);
-  position:relative; display:flex; gap:14px; align-items:flex-start;
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-l); padding:13px 14px 13px 15px;
+  position:relative; display:flex; align-items:stretch; overflow:hidden;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-m);
   transition:border-color .14s, box-shadow .14s, opacity .2s;
 }
-.task::before{content:""; position:absolute; left:0; top:14px; bottom:14px; width:3px; border-radius:0 3px 3px 0;
-  background:var(--accent-row); opacity:.85}
+.task::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent-row); opacity:.9}
 .task:hover{border-color:var(--border-2); box-shadow:var(--shadow-1)}
-.task.done{opacity:.7}
-.task.done .t-title{text-decoration:line-through; text-decoration-color:color-mix(in srgb,var(--st-done) 60%,transparent);
-  text-decoration-thickness:1.5px; color:var(--muted)}
-.t-body{flex:1; min-width:0; cursor:pointer; border-radius:8px}
-.t-body:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
-.t-title{font-weight:550; font-size:14.6px; letter-spacing:-.012em; word-break:break-word}
-.t-notes{margin-top:4px; font-size:12.8px; color:var(--muted); white-space:pre-wrap; word-break:break-word}
-.tags{display:flex; gap:5px; flex-wrap:wrap; margin-top:9px}
+.task.done{opacity:.6}
+.t-status{
+  --sc:var(--st-todo);
+  display:grid; place-items:center; width:46px; flex:none; color:var(--sc); font-size:19px;
+  border-right:1px solid transparent; transition:background .14s;
+}
+.t-status:hover{background:color-mix(in srgb,var(--sc) 12%,transparent)}
+.t-open{
+  flex:1; min-width:0; display:flex; align-items:center; gap:9px; padding:13px 12px 13px 2px;
+  text-align:left; color:inherit;
+}
+.t-title{
+  flex:1; min-width:0; font-size:14.6px; font-weight:550; letter-spacing:-.012em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.task.done .t-title{text-decoration:line-through;
+  text-decoration-color:color-mix(in srgb,var(--st-done) 60%,transparent); color:var(--muted)}
+.t-when{
+  flex:none; font-size:11.4px; font-weight:600; padding:3px 8px; border-radius:6px; white-space:nowrap;
+  background:color-mix(in srgb,var(--tw) 10%,transparent); color:color-mix(in srgb,var(--tw) 78%,var(--text));
+  border:1px solid color-mix(in srgb,var(--tw) 24%,transparent);
+}
+.t-when.overdue{--tw:var(--q1)}
+.t-when.soon{--tw:var(--q3)}
+.t-open .chev{width:16px; height:16px; color:var(--muted); opacity:.6; flex:none}
+.t-open:hover .chev{opacity:1}
 .tag{
   --tc:var(--muted);
-  font-size:11.4px; font-weight:550; padding:3px 8px; border-radius:6px; display:inline-flex; gap:5px;
+  font-size:11.6px; font-weight:550; padding:4px 9px; border-radius:6px; display:inline-flex; gap:5px;
   align-items:center; white-space:nowrap; border:1px solid color-mix(in srgb,var(--tc) 22%,var(--border));
   background:color-mix(in srgb,var(--tc) 8%,transparent); color:color-mix(in srgb,var(--tc) 72%,var(--text));
 }
 .tag .ic{font-size:12.5px}
-.tag.due-soon{--tc:#B26A00}
-.tag.overdue{--tc:#C62828}
-:root[data-theme="dark"] .tag.overdue, :root:not([data-theme="light"]) .tag.overdue{--tc:#F87171}
-.t-right{display:flex; flex-direction:column; align-items:flex-end; gap:8px}
+.tag.overdue{--tc:var(--q1)}
 .status-group{display:flex; gap:2px; background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:2px}
 .status-group button{
   --sc:var(--st-todo);
-  display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:7px; font-size:12.2px;
-  font-weight:550; color:var(--muted); white-space:nowrap; transition:background .14s, color .14s, box-shadow .14s;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; border-radius:7px;
+  font-size:12.4px; font-weight:550; color:var(--muted); white-space:nowrap;
+  transition:background .14s, color .14s, box-shadow .14s;
 }
 .status-group button .ic{font-size:14px}
 .status-group button:hover{color:var(--text); background:color-mix(in srgb,var(--sc) 10%,transparent)}
@@ -288,14 +303,29 @@ a,label,.chip,.row-item,.mstat,.tag{touch-action:manipulation}
   background:var(--surface); color:color-mix(in srgb,var(--sc) 74%,var(--text)); box-shadow:var(--shadow-1); font-weight:600;
 }
 .status-group button[aria-pressed="true"] .ic{color:var(--sc)}
-.t-actions{display:flex; gap:4px; opacity:0; transition:opacity .14s}
-.task:hover .t-actions, .task:focus-within .t-actions{opacity:1}
 .mini{
   width:30px; height:30px; border-radius:8px; border:1px solid transparent; color:var(--muted);
   display:grid; place-items:center; font-size:14.5px; transition:background .14s, color .14s, border-color .14s;
 }
 .mini:hover{background:var(--surface-2); border-color:var(--border); color:var(--text)}
 .mini.del:hover{color:#C92A2A; border-color:color-mix(in srgb,#C92A2A 30%,transparent)}
+
+/* ---------- one task, opened ---------- */
+.d-title{font-size:18px; line-height:1.3; letter-spacing:-.02em; flex:1; min-width:0; word-break:break-word}
+.d-title.done{text-decoration:line-through; text-decoration-color:color-mix(in srgb,var(--st-done) 60%,transparent);
+  color:var(--muted)}
+.d-status{margin-bottom:16px}
+.d-status .status-group{width:100%}
+.d-status .status-group button{flex:1}
+.d-meta{border-top:1px solid var(--border)}
+.d-row{display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--border)}
+.d-label{
+  width:74px; flex:none; font-size:10.8px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--muted); padding-top:4px;
+}
+.d-value{flex:1; min-width:0; display:flex; flex-wrap:wrap; gap:5px; align-items:center}
+.d-notes{font-size:13.4px; color:var(--text-2); white-space:pre-wrap; word-break:break-word}
+.d-none{font-size:13px; color:var(--muted)}
 
 /* ---------- empty ---------- */
 .empty{
@@ -411,11 +441,8 @@ textarea.input{resize:vertical; min-height:68px}
   .fab{display:grid}
   .question{font-size:19px; margin-top:22px}
   .row-item{min-height:58px}
-  .task{flex-direction:column; gap:11px}
-  .t-right{flex-direction:column; align-items:stretch; width:100%; gap:7px}
-  .status-group{width:100%}
-  .status-group button{flex:1; justify-content:center; padding:8px 4px; font-size:11.8px; gap:5px}
-  .t-actions{display:none}   /* tap the task itself to edit or delete it */
+  .t-status{width:52px; font-size:20px}
+  .t-open{padding:14px 12px 14px 2px}
   .row2{grid-template-columns:1fr}
   .sheet{padding:16px; border-radius:14px}
 }
@@ -757,33 +784,23 @@ function statusGroupHTML(t){
 
 function taskHTML(t, opts){
   opts = opts || {};
-  var c = cat(t.category), sc = sub(t.category, t.sub), q = quad(t.quadrant), s = stat(t.status);
-  var d = dueInfo(t.due);
-  var tags = "";
-  if(opts.tags === "full"){
-    tags += '<span class="tag" style="--tc:'+c.color+'">'+c.icon+" "+esc(c.name)+'</span>';
-    tags += '<span class="tag" style="--tc:'+c.color+'">'+sc.icon+" "+esc(sc.name)+'</span>';
-    tags += '<span class="tag" style="--tc:'+q.color+'">'+quadGlyph(q.id)+esc(q.name)+'</span>';
-  }else if(opts.tags === "area"){
-    tags += '<span class="tag" style="--tc:'+c.color+'">'+c.icon+" "+esc(c.name)+'</span>';
-    tags += '<span class="tag" style="--tc:'+c.color+'">'+sc.icon+" "+esc(sc.name)+'</span>';
+  var c = cat(t.category), d = dueInfo(t.due), s = stat(t.status);
+  var when = "";
+  if(d && t.status !== "done" && (d.days < 0 || d.days <= 2)){
+    when = '<span class="t-when '+(d.days < 0 ? "overdue" : "soon")+'">'+
+             (d.days < 0 ? "Overdue" : esc(d.label))+'</span>';
   }
-  if(d) tags += '<span class="tag '+d.cls+'">'+(d.cls==="overdue" ? ic("clock") : ic("cal"))+
-                 (d.days<0 && t.status!=="done" ? "Overdue · " : "")+esc(d.label)+'</span>';
-
-  return '<article class="task'+(t.status==="done"?" done":"")+'" data-task="'+t.id+'" style="--accent-row:'+c.color+'">'+
-    '<div class="t-body" data-act="edit" data-id="'+t.id+'" role="button" tabindex="0" '+
-      'title="Open this task">'+
-      '<div class="t-title">'+esc(t.title)+'</div>'+
-      (t.notes ? '<p class="t-notes">'+esc(t.notes)+'</p>' : '')+
-      '<div class="tags">'+tags+'</div>'+
-    '</div>'+
-    '<div class="t-right">'+ statusGroupHTML(t) +
-      '<div class="t-actions">'+
-        '<button class="mini" data-act="edit" data-id="'+t.id+'" title="Edit task" aria-label="Edit task">'+ic("pencil")+'</button>'+
-        '<button class="mini del" data-act="del" data-id="'+t.id+'" title="Delete task" aria-label="Delete task">'+ic("trash")+'</button>'+
-      '</div>'+
-    '</div>'+
+  var next = t.status === "todo" ? "doing" : (t.status === "doing" ? "done" : "todo");
+  return '<article class="task'+(t.status==="done"?" done":"")+'" data-task="'+t.id+'" '+
+      'style="--accent-row:'+c.color+'">'+
+    '<button class="t-status" data-act="cycle" data-id="'+t.id+'" style="--sc:'+STATUS_COLORS[t.status]+'" '+
+      'title="'+esc(s.label)+' — tap for '+esc(stat(next).label)+'" '+
+      'aria-label="'+esc(s.label)+'. Change to '+esc(stat(next).label)+'">'+statusGlyph(t.status)+'</button>'+
+    '<button class="t-open" data-act="open-task" data-id="'+t.id+'">'+
+      '<span class="t-title">'+(opts.area ? c.icon+" " : "")+esc(t.title)+'</span>'+
+      when+
+      '<span class="chev">'+ICON.chev+'</span>'+
+    '</button>'+
   '</article>';
 }
 
@@ -856,7 +873,7 @@ function renderPriorityHome(){
         '<span class="num prio-count">'+open.length+'</span>'+
       '</div>'+
       (open.length
-        ? listHTML(open, {tags:"area"}, "")
+        ? listHTML(open, {area:true}, "")
         : '<button class="row-item dashed" data-act="add" data-quad="'+q.id+'">'+
             '<span class="row-ico">'+ic("plus")+'</span><span class="row-txt">'+
             '<span class="row-name">Nothing in this box</span>'+
@@ -1027,7 +1044,7 @@ function renderAll(){
     '<div class="group-title"><span>'+esc(filterSummary(items.length))+'</span><span class="line"></span>'+
       (ui.fStat!=="all" || ui.fCat!=="all" || ui.search.trim() ?
         '<button class="btn sm ghost" data-act="clear-filters">'+ic("x")+'Clear</button>' : '')+'</div>'+
-    listHTML(items, {tags:"full"}, emptyHTML(ui.fStat==="overdue" ? ic("clock") : ic("inbox"),
+    listHTML(items, {area:true}, emptyHTML(ui.fStat==="overdue" ? ic("clock") : ic("inbox"),
       ui.fStat==="overdue" ? "Nothing is overdue" : "No tasks match",
       state.tasks.length ? (ui.fStat==="overdue" ? "Every due date is still ahead of you."
                                                  : "Try clearing the filters or the search box.")
@@ -1058,6 +1075,53 @@ function paint(){
   Array.prototype.forEach.call(document.querySelectorAll("#viewSwitch button"), function(b){
     b.setAttribute("aria-selected", String(b.dataset.view === ui.view));
   });
+}
+
+/* ============ one task, opened ============ */
+function metaRow(label, value){
+  return '<div class="d-row"><span class="d-label">'+esc(label)+'</span><span class="d-value">'+value+'</span></div>';
+}
+
+function openDetail(id){
+  var t = byId(id);
+  if(!t) return;
+  var c = cat(t.category), sg = sub(t.category, t.sub), q = quad(t.quadrant), d = dueInfo(t.due);
+  var pills = '<div class="status-group" role="group" aria-label="Status">'+
+    STATUS_IDS.map(function(sid){
+      return '<button data-act="status" data-id="'+t.id+'" data-status="'+sid+'" '+
+        'style="--sc:'+STATUS_COLORS[sid]+'" aria-pressed="'+(t.status===sid)+'">'+
+        statusGlyph(sid)+'<span>'+esc(stat(sid).label)+'</span></button>';
+    }).join("")+'</div>';
+
+  var el = $("#taskModal");
+  el.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Task">'+
+    '<div class="sheet-head">'+
+      '<h3 class="d-title'+(t.status==="done"?" done":"")+'">'+esc(t.title)+'</h3>'+
+      '<button class="icon-btn x" data-act="close" aria-label="Close">'+ic("x")+'</button></div>'+
+    '<div class="d-status">'+pills+'</div>'+
+    '<div class="d-meta">'+
+      metaRow("Area", '<span class="tag" style="--tc:'+c.color+'">'+c.icon+' '+esc(c.name)+'</span>'+
+                      '<span class="tag" style="--tc:'+c.color+'">'+sg.icon+' '+esc(sg.name)+'</span>')+
+      metaRow("Priority", '<span class="tag" style="--tc:'+q.color+'">'+quadGlyph(q.id)+esc(q.name)+'</span>')+
+      metaRow("Due", d ? '<span class="tag '+(d.cls==="overdue"&&t.status!=="done"?"overdue":"")+'">'+
+                          ic(d.cls==="overdue"&&t.status!=="done"?"clock":"cal")+
+                          (d.days<0 && t.status!=="done" ? "Overdue · " : "")+esc(d.label)+'</span>'
+                       : '<span class="d-none">No due date</span>')+
+      metaRow("Notes", t.notes ? '<span class="d-notes">'+esc(t.notes)+'</span>'
+                               : '<span class="d-none">None</span>')+
+    '</div>'+
+    '<div class="sheet-foot">'+
+      '<button class="btn danger grow" data-act="del" data-id="'+t.id+'">'+ic("trash")+'Delete</button>'+
+      '<button class="btn" data-act="edit" data-id="'+t.id+'">'+ic("pencil")+'Edit</button>'+
+      '<button class="btn primary" data-act="close">Done</button>'+
+    '</div></div>';
+  el.hidden = false;
+  wiz = null;
+}
+
+function cycleStatus(id){
+  var t = byId(id); if(!t) return;
+  setStatus(id, t.status === "todo" ? "doing" : (t.status === "doing" ? "done" : "todo"));
 }
 
 /* ============ new task: one question at a time ============ */
@@ -1452,7 +1516,14 @@ document.addEventListener("click", function(ev){
       break;
     case "toggle-filters": ui.showFilters = !ui.showFilters; render(); break;
     case "open-settings": openSettings(); break;
-    case "status": setStatus(b.dataset.id, b.dataset.status); break;
+    case "status": {
+      var openId = b.dataset.id;
+      setStatus(openId, b.dataset.status);
+      if(!$("#taskModal").hidden) setTimeout(function(){ openDetail(openId); }, 30);
+      break;
+    }
+    case "cycle": cycleStatus(b.dataset.id); break;
+    case "open-task": openDetail(b.dataset.id); break;
     case "add": openTask(null, {cat:b.dataset.cat, sub:b.dataset.sub, quad:b.dataset.quad}); break;
     case "edit": openTask(b.dataset.id); break;
     case "del": {
@@ -1527,10 +1598,6 @@ document.addEventListener("mousedown", function(ev){
 });
 document.addEventListener("keydown", function(ev){
   if(ev.key === "Escape"){ closeModals(); return; }
-  var f = document.activeElement;
-  if(f && f.classList && f.classList.contains("t-body") && (ev.key === "Enter" || ev.key === " ")){
-    ev.preventDefault(); openTask(f.dataset.id); return;
-  }
   var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if(!typing && (ev.key === "n" || ev.key === "N") && $("#taskModal").hidden){ ev.preventDefault(); openTask(null,{}); }
   if(ev.key === "Enter" && !$("#taskModal").hidden && wiz){
