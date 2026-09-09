@@ -373,7 +373,9 @@ textarea.input{resize:vertical; min-height:74px}
   .tab .t-name{font-size:12.6px}
   .tab .t-meta{font-size:10.8px}
   .row2{grid-template-columns:1fr}
-  .picker.cats{grid-template-columns:1fr}
+  .picker.cats{grid-template-columns:repeat(auto-fit,minmax(138px,1fr))}
+  .picker.cats .opt{padding:9px 10px; font-size:13px; gap:8px}
+  .picker.cats .opt span:last-child{min-width:0; word-break:break-word}
   .hero{margin-top:20px}
   .stat{flex:1 1 calc(50% - 10px); min-width:0}
 }
