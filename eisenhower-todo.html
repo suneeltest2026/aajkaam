@@ -42,7 +42,8 @@ body::before{
 }
 h1,h2,h3,h4{margin:0; letter-spacing:-.02em; line-height:1.2}
 button,input,select,textarea{font:inherit; color:inherit}
-button{cursor:pointer}
+button{cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:rgba(109,94,252,.18)}
+a,label,.chip,.tab,.stat,.cat-card,.add-card,.opt{touch-action:manipulation}
 ::selection{background:color-mix(in srgb, var(--brand) 30%, transparent)}
 :focus-visible{outline:2.5px solid var(--brand); outline-offset:2px; border-radius:8px}
 
@@ -358,8 +359,8 @@ textarea.input{resize:vertical; min-height:74px}
   .shell{padding:14px 13px 96px}
   .topbar{top:8px; padding:10px; gap:10px; border-radius:20px}
   .brand p{display:none}
-  .segmented{order:3; width:100%}
-  .segmented button{flex:1; justify-content:center}
+  .segmented{order:3; width:100%; padding:5px}
+  .segmented button{flex:1; justify-content:center; min-height:46px; font-size:14px}
   .tools .btn.primary{display:none}
   .fab{display:grid; place-items:center}
   .task{flex-direction:column; gap:11px; padding:14px 14px 13px 16px}
@@ -926,6 +927,16 @@ function renderAll(){
 }
 
 function render(){
+  try{ paint(); }
+  catch(err){
+    var m = $("#main");
+    if(m) m.innerHTML = '<div class="empty"><span class="e-ico">🛠️</span><h3>Something went wrong drawing this view</h3>'+
+      '<p>'+esc(String(err && err.message ? err.message : err))+'</p>'+
+      '<button class="btn primary" data-act="home">Back to my areas</button></div>';
+  }
+}
+
+function paint(){
   document.documentElement.setAttribute("data-theme", state.theme);
   $("#themeBtn").textContent = state.theme === "dark" ? "☀️" : "🌙";
   var m = $("#main");
@@ -1259,7 +1270,12 @@ document.addEventListener("click", function(ev){
   var b = ev.target.closest("[data-act], [data-view], [data-pick]");
   if(!b) return;
 
-  if(b.dataset.view){ ui.view = b.dataset.view; ui.openCat = null; ui.openSub = null; render(); return; }
+  if(b.dataset.view){
+    ui.view = b.dataset.view; ui.openCat = null; ui.openSub = null;
+    render();
+    try{ window.scrollTo(0,0); }catch(e){}
+    return;
+  }
 
   if(b.dataset.pick){
     var k = b.dataset.pick;
