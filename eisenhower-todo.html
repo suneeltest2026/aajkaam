@@ -101,11 +101,22 @@ button{cursor:pointer}
 .hero p{margin:7px 0 0; color:var(--muted); font-size:14.5px; max-width:56ch}
 .stats{display:flex; gap:10px; flex-wrap:wrap}
 .stat{
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-l); padding:11px 15px;
-  min-width:104px; box-shadow:var(--shadow-s);
+  --sc:var(--brand);
+  position:relative; text-align:left; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-l); padding:11px 15px; min-width:104px; box-shadow:var(--shadow-s);
+  transition:transform .18s cubic-bezier(.2,.8,.3,1), box-shadow .18s, border-color .18s, background .18s;
 }
+.stat:hover{transform:translateY(-3px); box-shadow:var(--shadow-m);
+  border-color:color-mix(in srgb,var(--sc) 45%,var(--border))}
+.stat:active{transform:translateY(-1px) scale(.985)}
+.stat[aria-pressed="true"]{border-color:color-mix(in srgb,var(--sc) 60%,transparent);
+  background:color-mix(in srgb,var(--sc) 10%,var(--surface));
+  box-shadow:0 10px 24px -14px color-mix(in srgb,var(--sc) 95%,transparent)}
 .stat b{display:block; font-size:22px; letter-spacing:-.03em}
-.stat span{font-size:11.5px; color:var(--muted); font-weight:650; letter-spacing:.05em; text-transform:uppercase}
+.stat span{display:block; font-size:11.5px; color:var(--muted); font-weight:650; letter-spacing:.05em; text-transform:uppercase}
+.stat .peek{position:absolute; top:9px; right:11px; font-size:11px; color:var(--muted); opacity:0; transition:opacity .18s, transform .18s}
+.stat:hover .peek{opacity:1; transform:translateX(2px)}
+@media (hover:none){ .stat .peek{opacity:.45} }
 
 /* ---------- category cards ---------- */
 .grid-cats{display:grid; grid-template-columns:repeat(auto-fit,minmax(258px,1fr)); gap:16px}
@@ -585,12 +596,19 @@ function statsHTML(){
   var doing = all.filter(function(t){return t.status==="doing";}).length;
   var today = todayISO();
   var late = all.filter(function(t){ return t.status!=="done" && t.due && t.due < today; }).length;
-  return '<div class="stats">'+
-    '<div class="stat"><b>'+all.length+'</b><span>Total</span></div>'+
-    '<div class="stat"><b style="color:'+STATUS_COLORS.doing+'">'+doing+'</b><span>'+esc(stat("doing").label)+'</span></div>'+
-    '<div class="stat"><b style="color:'+STATUS_COLORS.done+'">'+done+'</b><span>'+esc(stat("done").label)+'</span></div>'+
-    '<div class="stat"><b style="color:'+(late?"#ef4444":"var(--text)")+'">'+late+'</b><span>Overdue</span></div>'+
-  '</div>';
+  var tiles = [
+    {val:"all",     n:all.length, label:"Total",                color:"var(--brand)",       num:""},
+    {val:"doing",   n:doing,      label:stat("doing").label,    color:STATUS_COLORS.doing,  num:STATUS_COLORS.doing},
+    {val:"done",    n:done,       label:stat("done").label,     color:STATUS_COLORS.done,   num:STATUS_COLORS.done},
+    {val:"overdue", n:late,       label:"Overdue",              color:"#ef4444",            num:late?"#ef4444":""}
+  ];
+  return '<div class="stats">'+ tiles.map(function(x){
+    var on = ui.view === "all" && ui.fStat === x.val;
+    return '<button class="stat" data-act="stat" data-val="'+x.val+'" style="--sc:'+x.color+'" '+
+      'aria-pressed="'+on+'" title="Show these tasks in a list">'+
+      '<span class="peek">'+(on?"●":"→")+'</span>'+
+      '<b'+(x.num?' style="color:'+x.num+'"':'')+'>'+x.n+'</b><span>'+esc(x.label)+'</span></button>';
+  }).join("") + '</div>';
 }
 
 function greeting(){
@@ -663,11 +681,20 @@ function renderCategory(){
       {label:"Add a task here", cat:c.id, quad:q.id}));
 }
 
+function filterSummary(n){
+  var what = ui.fStat === "all" ? "task" :
+             (ui.fStat === "overdue" ? "overdue task" : stat(ui.fStat).label.toLowerCase()+" task");
+  var where = ui.fCat === "all" ? "" : " in "+cat(ui.fCat).name;
+  if(ui.fStat === "all" && ui.fCat === "all" && !ui.search.trim()) return "Showing all "+n+" task"+(n===1?"":"s");
+  return "Showing "+n+" "+what+(n===1?"":"s")+where+" of "+state.tasks.length+" total";
+}
+
 function renderAll(){
   var term = ui.search.trim().toLowerCase();
   var items = state.tasks.filter(function(t){
     if(ui.fCat !== "all" && t.category !== ui.fCat) return false;
-    if(ui.fStat !== "all" && t.status !== ui.fStat) return false;
+    if(ui.fStat === "overdue"){ if(t.status === "done" || !t.due || t.due >= todayISO()) return false; }
+    else if(ui.fStat !== "all" && t.status !== ui.fStat) return false;
     if(term && (t.title+" "+(t.notes||"")).toLowerCase().indexOf(term) === -1) return false;
     return true;
   });
@@ -680,7 +707,9 @@ function renderAll(){
     STATUS_IDS.map(function(sid){
       return '<button class="chip" data-act="fstat" data-val="'+sid+'" style="--c:'+STATUS_COLORS[sid]+'" aria-pressed="'+
         (ui.fStat===sid)+'">'+stat(sid).icon+' '+esc(stat(sid).label)+'</button>';
-    }).join("");
+    }).join("")+
+    '<button class="chip" data-act="fstat" data-val="overdue" style="--c:#ef4444" aria-pressed="'+
+      (ui.fStat==="overdue")+'">⏰ Overdue</button>';
 
   return '<section class="hero"><div><h2>All activities 📋</h2>'+
       '<p>Every task from every category and priority tab, in one master list. Tags show where each one lives.</p></div>'+
@@ -692,9 +721,14 @@ function renderAll(){
     '</div>'+
     '<div class="toolbar" style="margin-top:0"><div class="chips">'+catChips+'</div></div>'+
     '<div class="toolbar" style="margin-top:-4px"><div class="chips">'+statChips+'</div></div>'+
-    '<div class="group-title"><span>Showing '+items.length+' of '+state.tasks.length+'</span><span class="line"></span></div>'+
-    listHTML(items, {tags:true}, emptyHTML("🗒️","No tasks match",
-      state.tasks.length ? "Try clearing the filters or the search box." : "Add your first task to get the ball rolling.",
+    '<div class="group-title"><span>'+esc(filterSummary(items.length))+'</span><span class="line"></span>'+
+      (ui.fStat!=="all" || ui.fCat!=="all" || ui.search.trim() ?
+        '<button class="btn sm ghost" data-act="clear-filters">✕ Clear filters</button>' : '')+'</div>'+
+    listHTML(items, {tags:true}, emptyHTML(ui.fStat==="overdue" ? "🎈" : "🗒️",
+      ui.fStat==="overdue" ? "Nothing is overdue" : "No tasks match",
+      state.tasks.length ? (ui.fStat==="overdue" ? "You are on top of every due date. Nice."
+                                                 : "Try clearing the filters or the search box.")
+                         : "Add your first task to get the ball rolling.",
       {label:"Add a task"}));
 }
 
@@ -941,6 +975,11 @@ document.addEventListener("click", function(ev){
         save(); closeModals(); render(); toast("Fresh start ✨");
       }
       break;
+    case "stat":
+      ui.view = "all"; ui.openCat = null; ui.fStat = b.dataset.val; ui.fCat = "all"; ui.search = "";
+      render(); window.scrollTo({top:0, behavior:"smooth"});
+      break;
+    case "clear-filters": ui.fStat = "all"; ui.fCat = "all"; ui.search = ""; render(); break;
     case "fcat": ui.fCat = b.dataset.val; render(); break;
     case "fstat": ui.fStat = b.dataset.val; render(); break;
   }
