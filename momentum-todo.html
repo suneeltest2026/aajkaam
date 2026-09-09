@@ -426,6 +426,19 @@ textarea.input{resize:vertical; min-height:68px}
   box-shadow:var(--shadow-3); animation:fade .16s ease both, cheer-out .4s ease 2.2s both;
 }
 
+.toasts{pointer-events:none}
+.toast.has-action{display:flex; align-items:center; gap:12px; padding:8px 8px 8px 14px; pointer-events:auto}
+.toast-btn{
+  font-size:12.6px; font-weight:600; color:var(--bg); padding:5px 11px; border-radius:7px;
+  border:1px solid color-mix(in srgb, var(--bg) 40%, transparent); background:transparent; transition:background .14s;
+}
+.toast-btn:hover{background:color-mix(in srgb, var(--bg) 18%, transparent)}
+.row-item.danger-row .row-ico{color:var(--q1); background:color-mix(in srgb,var(--q1) 9%,transparent);
+  border-color:color-mix(in srgb,var(--q1) 22%,transparent)}
+.row-item.danger-row:hover{border-color:color-mix(in srgb,var(--q1) 45%,transparent);
+  background:color-mix(in srgb,var(--q1) 4%,transparent)}
+.row-item.danger-row .row-name{color:var(--q1)}
+
 /* ---------- phones ---------- */
 @media (max-width:760px){
   .shell{padding:0 max(14px, env(safe-area-inset-left)) calc(104px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right))}
@@ -1307,8 +1320,19 @@ function settingsPaneHTML(){
     '<div class="sec-title"><span>Celebration message</span><span class="line"></span></div>'+
     '<div class="field"><input class="input" data-set="cheer" value="'+esc(state.cheer)+'" maxlength="60" '+
       'placeholder="Great job! Successfully completed 🎉" aria-label="Celebration message"></div>'+
+    '<div class="sec-title"><span>Start fresh</span><span class="line"></span></div>'+
+    '<div class="rows">'+
+      '<button class="row-item danger-row" data-act="clear-tasks">'+
+        '<span class="row-ico">'+ic("trash")+'</span>'+
+        '<span class="row-txt"><span class="row-name">Clear all tasks</span>'+
+        '<span class="row-meta">Deletes your '+state.tasks.length+' task'+(state.tasks.length===1?"":"s")+
+          '. Areas, groups and labels stay.</span></span></button>'+
+      '<button class="row-item danger-row" data-act="reset">'+
+        '<span class="row-ico">'+ic("grid")+'</span>'+
+        '<span class="row-txt"><span class="row-name">Reset everything</span>'+
+        '<span class="row-meta">Back to four empty areas with the original names.</span></span></button>'+
+    '</div>'+
     '<div class="sheet-foot">'+
-      '<button class="btn danger grow" data-act="reset">Reset everything</button>'+
       '<button class="btn primary" data-act="close">Done</button>'+
     '</div></div>';
 }
@@ -1374,12 +1398,56 @@ function closeModals(){
 }
 
 /* ============ celebration + toast ============ */
-function toast(msg){
+function toast(msg, action){
   var box = $("#toasts");
   var el = document.createElement("div");
-  el.className = "toast"; el.textContent = msg;
+  el.className = "toast" + (action ? " has-action" : "");
+  el.appendChild(document.createTextNode(msg));
+  if(action){
+    var btn = document.createElement("button");
+    btn.className = "toast-btn";
+    btn.textContent = action.label;
+    btn.addEventListener("click", function(){
+      action.run();
+      if(el.parentNode) el.parentNode.removeChild(el);
+    });
+    el.appendChild(btn);
+  }
   box.appendChild(el);
-  setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 2600);
+  setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, action ? 7200 : 2600);
+}
+
+/* ---- starting fresh, with a way back ---- */
+var undoSnap = null;
+
+function clearTasks(){
+  var n = state.tasks.length;
+  if(!n){ toast("There are no tasks to clear"); return; }
+  if(!confirm("Clear all "+n+" task"+(n===1?"":"s")+"? Your areas, groups and labels stay as they are.")) return;
+  undoSnap = JSON.stringify(state);
+  state.tasks = [];
+  save(); closeModals(); render();
+  toast("Cleared "+n+" task"+(n===1?"":"s"), {label:"Undo", run:undoLast});
+}
+
+function resetEverything(){
+  if(!confirm("Start completely over? This clears your tasks and puts the areas, groups and labels back to the beginning.")) return;
+  undoSnap = JSON.stringify(state);
+  var theme = state.theme;
+  state = defaults();
+  state.theme = theme; state.tasks = []; state.seeded = true;
+  ui.openCat = null; ui.openSub = null; ui.tab = null;
+  ui.fCat = "all"; ui.fSub = "all"; ui.fStat = "all"; ui.search = "";
+  save(); closeModals(); render();
+  toast("Everything is back to the start", {label:"Undo", run:undoLast});
+}
+
+function undoLast(){
+  if(!undoSnap) return;
+  try{ state = JSON.parse(undoSnap); }catch(e){ return; }
+  undoSnap = null;
+  save(); render();
+  toast("Put back");
 }
 
 function celebrate(node){
@@ -1520,15 +1588,8 @@ document.addEventListener("click", function(ev){
     case "del-cat": deleteCategory(b.dataset.cat); break;
     case "del-sub": deleteSub(b.dataset.cat, b.dataset.sub); break;
 
-    case "reset":
-      if(confirm("Reset all tasks, areas, groups and names back to the starting example? This cannot be undone.")){
-        try{ localStorage.removeItem(KEY); localStorage.removeItem(OLD_KEY); }catch(e){}
-        state = defaults(); state.tasks = seedTasks(); state.seeded = true;
-        ui.openCat = null; ui.openSub = null; ui.tab = null;
-        ui.fCat = "all"; ui.fSub = "all"; ui.fStat = "all"; ui.search = "";
-        save(); closeModals(); render(); toast("Reset to the starting example");
-      }
-      break;
+    case "clear-tasks": clearTasks(); break;
+    case "reset": resetEverything(); break;
     case "stat":
       ui.view = "all"; ui.openCat = null; ui.openSub = null; ui.tab = null;
       ui.fStat = b.dataset.val; ui.fCat = "all"; ui.fSub = "all"; ui.search = "";
