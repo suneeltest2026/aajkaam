@@ -1,5 +1,5 @@
 /* Momentum offline shell — stale-while-revalidate */
-var CACHE = "momentum-v4";
+var CACHE = "momentum-v5";
 var ASSETS = ["./", "./index.html", "./manifest.webmanifest",
               "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
