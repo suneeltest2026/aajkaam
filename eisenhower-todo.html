@@ -380,6 +380,50 @@ textarea.input{resize:vertical; min-height:74px}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important}
 }
+
+/* ---------- hierarchy: card wrappers, add-cards, breadcrumbs ---------- */
+.card-wrap{position:relative; display:flex}
+.card-wrap>.cat-card{width:100%}
+.card-edit{
+  position:absolute; top:12px; right:12px; z-index:2; width:30px; height:30px; border-radius:10px;
+  border:1px solid var(--border); background:var(--surface); font-size:13px; display:grid; place-items:center;
+  opacity:0; transform:translateY(-3px); transition:opacity .18s, transform .18s, box-shadow .18s;
+}
+.card-wrap:hover .card-edit, .card-edit:focus-visible{opacity:1; transform:none; box-shadow:var(--shadow-s)}
+@media (hover:none){ .card-edit{opacity:.7; transform:none} }
+.qchip b{font-weight:800}
+.add-card{
+  border:2px dashed var(--border); background:color-mix(in srgb,var(--surface) 55%, transparent);
+  border-radius:var(--r-xl); padding:18px; min-height:132px; display:flex; align-items:center; gap:13px;
+  text-align:left; color:var(--muted); transition:.2s;
+}
+.add-card:hover{border-color:color-mix(in srgb,var(--brand) 55%,transparent); color:var(--text);
+  background:color-mix(in srgb,var(--brand) 7%,transparent); transform:translateY(-3px)}
+.add-card .plus{
+  width:46px; height:46px; border-radius:15px; display:grid; place-items:center; font-size:23px; flex:none;
+  background:color-mix(in srgb,var(--brand) 14%,transparent); color:var(--brand);
+}
+.add-card b{display:block; font-size:15.5px; color:var(--text); letter-spacing:-.01em}
+.add-card small{display:block; font-size:12.4px; margin-top:2px}
+.crumb-sep{color:var(--muted); font-weight:700}
+.crumb-now{color:var(--muted); font-size:13.5px; font-weight:650}
+.back.plain{padding:8px 14px}
+.back.plain:hover{transform:translateY(-2px)}
+.sub-chips{padding-left:2px}
+.sub-chips .chip{font-size:12.4px}
+
+/* ---------- settings blocks ---------- */
+.set-block{
+  --accent:var(--brand);
+  border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:var(--r-m);
+  padding:11px 12px 4px; margin-bottom:11px; background:var(--surface-2);
+}
+.set-row.tight{gap:7px; margin-bottom:8px}
+.mini-note{font-size:12px; color:var(--muted); font-weight:650}
+.btn.add-line{width:100%; justify-content:center; border-style:dashed; color:var(--text-2); margin-bottom:4px}
+.btn.add-line:hover{color:var(--text); border-color:color-mix(in srgb,var(--brand) 55%,transparent)}
+.swatches.wide{display:flex; flex-wrap:wrap; gap:6px}
+.sheet-head h3{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 </style>
 </head>
 <body>
@@ -416,8 +460,11 @@ textarea.input{resize:vertical; min-height:74px}
 "use strict";
 
 /* ============ constants ============ */
-var KEY = "momentum.eisenhower.v1";
+var KEY = "momentum.eisenhower.v2";
+var OLD_KEY = "momentum.eisenhower.v1";
 var PALETTE = ["#6366f1","#ec4899","#10b981","#f59e0b","#0ea5e9","#8b5cf6","#ef4444","#14b8a6"];
+var NEW_ICONS = ["✨","🎯","🧭","🎨","🏡","🌱","🛠️","📚"];
+var SUB_ICONS = ["📌","🗂️","📎","⭐"];
 
 var QUADS = [
   {id:"q1", name:"Important & Urgent",          hint:"Do it now",        icon:"🔥", color:"#ef4444"},
@@ -431,10 +478,18 @@ var STATUS_COLORS = {todo:"#94a3b8", doing:"#f59e0b", done:"#10b981"};
 function defaults(){
   return {
     categories:[
-      {id:"c1", name:"Work",     icon:"💼", color:"#6366f1"},
-      {id:"c2", name:"Personal", icon:"🌈", color:"#ec4899"},
-      {id:"c3", name:"Health",   icon:"💪", color:"#10b981"},
-      {id:"c4", name:"Finance",  icon:"💰", color:"#f59e0b"}
+      {id:"c1", name:"Work", icon:"💼", color:"#6366f1", subs:[
+        {id:"c1s1",name:"Projects",icon:"📁"},{id:"c1s2",name:"Meetings",icon:"🗣️"},
+        {id:"c1s3",name:"Admin",icon:"🗃️"},{id:"c1s4",name:"Growth",icon:"📈"}]},
+      {id:"c2", name:"Personal", icon:"🌈", color:"#ec4899", subs:[
+        {id:"c2s1",name:"Home",icon:"🏠"},{id:"c2s2",name:"Family",icon:"👨‍👩‍👧"},
+        {id:"c2s3",name:"Friends",icon:"🎉"},{id:"c2s4",name:"Fun",icon:"🎮"}]},
+      {id:"c3", name:"Health", icon:"💪", color:"#10b981", subs:[
+        {id:"c3s1",name:"Fitness",icon:"🏃"},{id:"c3s2",name:"Food",icon:"🥗"},
+        {id:"c3s3",name:"Rest",icon:"😴"},{id:"c3s4",name:"Appointments",icon:"🩺"}]},
+      {id:"c4", name:"Finance", icon:"💰", color:"#f59e0b", subs:[
+        {id:"c4s1",name:"Bills",icon:"🧾"},{id:"c4s2",name:"Savings",icon:"🏦"},
+        {id:"c4s3",name:"Budget",icon:"📊"},{id:"c4s4",name:"Investing",icon:"📈"}]}
     ],
     statuses:{
       todo:{label:"Not Started", icon:"⚪"},
@@ -451,47 +506,74 @@ function defaults(){
 function seedTasks(){
   var t = Date.now();
   var s = [
-    ["Send the quarterly report","c1","q1","doing","Almost done — just needs the summary page."],
-    ["Plan next month's team goals","c1","q2","todo",""],
-    ["Reply to newsletter sign-ups","c1","q3","todo",""],
-    ["Book dentist appointment","c2","q1","todo",""],
-    ["Weekend trip ideas","c2","q4","todo","Somewhere with a lake 🏞️"],
-    ["30-minute walk after lunch","c3","q2","done",""],
-    ["Pay the electricity bill","c4","q1","todo",""],
-    ["Review savings plan","c4","q2","todo",""]
+    ["Send the quarterly report","c1","c1s1","q1","doing","Almost done — just needs the summary page."],
+    ["Plan next month's team goals","c1","c1s4","q2","todo",""],
+    ["Reply to newsletter sign-ups","c1","c1s3","q3","todo",""],
+    ["Book dentist appointment","c3","c3s4","q1","todo",""],
+    ["Weekend trip ideas","c2","c2s4","q4","todo","Somewhere with a lake 🏞️"],
+    ["30-minute walk after lunch","c3","c3s1","q2","done",""],
+    ["Pay the electricity bill","c4","c4s1","q1","todo",""],
+    ["Review savings plan","c4","c4s2","q2","todo",""]
   ];
   return s.map(function(x,i){
-    return {id:"t"+(t+i), title:x[0], category:x[1], quadrant:x[2], status:x[3],
-            notes:x[4], due:"", created:t+i, done_at:(x[3]==="done"? t : 0)};
+    return {id:"t"+(t+i), title:x[0], category:x[1], sub:x[2], quadrant:x[3], status:x[4],
+            notes:x[5], due:"", created:t+i, done_at:(x[4]==="done"? t : 0)};
   });
 }
 
+function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
 /* ============ state ============ */
 var state = load();
-var ui = {view:"cats", openCat:null, tab:"q1", search:"", fCat:"all", fStat:"all"};
+var ui = {view:"cats", openCat:null, openSub:null, tab:"q1",
+          search:"", fCat:"all", fSub:"all", fStat:"all", setMode:null};
 
 function load(){
-  var base = defaults();
+  var base = defaults(), raw = null, migrated = false;
+  try{ raw = localStorage.getItem(KEY); }catch(e){}
+  if(!raw){
+    try{ raw = localStorage.getItem(OLD_KEY); migrated = !!raw; }catch(e){}
+  }
   try{
-    var raw = localStorage.getItem(KEY);
-    if(raw){
-      var s = JSON.parse(raw);
-      if(s && typeof s === "object"){
-        base.categories = (s.categories && s.categories.length===4) ? s.categories : base.categories;
-        base.cheer = typeof s.cheer === "string" && s.cheer.trim() ? s.cheer : base.cheer;
-        base.theme = s.theme === "dark" ? "dark" : "light";
-        base.tasks = Array.isArray(s.tasks) ? s.tasks : [];
-        base.seeded = !!s.seeded;
-        STATUS_IDS.forEach(function(k){
-          if(s.statuses && s.statuses[k]){
-            if(s.statuses[k].label) base.statuses[k].label = s.statuses[k].label;
-            if(s.statuses[k].icon)  base.statuses[k].icon  = s.statuses[k].icon;
-          }
+    var s = raw ? JSON.parse(raw) : null;
+    if(s && typeof s === "object"){
+      if(Array.isArray(s.categories) && s.categories.length){
+        base.categories = s.categories.map(function(c,i){
+          var proto = defaults().categories[i % 4];
+          var subs = Array.isArray(c.subs) && c.subs.length ? c.subs : proto.subs.map(function(x,j){
+            return {id:(c.id||"c")+"s"+(j+1), name:x.name, icon:x.icon};
+          });
+          return {id:c.id||uid("c"), name:c.name||proto.name, icon:c.icon||proto.icon,
+                  color:c.color||proto.color, subs:subs};
         });
       }
+      if(typeof s.cheer === "string" && s.cheer.trim()) base.cheer = s.cheer;
+      base.theme = s.theme === "dark" ? "dark" : "light";
+      base.tasks = Array.isArray(s.tasks) ? s.tasks : [];
+      base.seeded = !!s.seeded;
+      STATUS_IDS.forEach(function(k){
+        if(s.statuses && s.statuses[k]){
+          if(s.statuses[k].label) base.statuses[k].label = s.statuses[k].label;
+          if(s.statuses[k].icon)  base.statuses[k].icon  = s.statuses[k].icon;
+        }
+      });
     }
-  }catch(e){ /* corrupt storage -> fresh start */ }
+  }catch(e){ base = defaults(); }
+
   if(!base.seeded){ base.tasks = seedTasks(); base.seeded = true; }
+
+  /* every task must point at a category + sub that still exists */
+  base.tasks = base.tasks.filter(function(t){ return t && t.title; }).map(function(t){
+    var c = null, i;
+    for(i=0;i<base.categories.length;i++) if(base.categories[i].id === t.category) c = base.categories[i];
+    if(!c) c = base.categories[0];
+    var has = false;
+    for(i=0;i<c.subs.length;i++) if(c.subs[i].id === t.sub) has = true;
+    t.category = c.id;
+    if(!has) t.sub = c.subs[0].id;
+    return t;
+  });
+  if(migrated){ try{ localStorage.setItem(KEY, JSON.stringify(base)); }catch(e){} }
   return base;
 }
 function save(){
@@ -506,13 +588,25 @@ function esc(s){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
   });
 }
-function cat(id){ for(var i=0;i<state.categories.length;i++) if(state.categories[i].id===id) return state.categories[i];
-  return state.categories[0]; }
+function cat(id){
+  for(var i=0;i<state.categories.length;i++) if(state.categories[i].id===id) return state.categories[i];
+  return state.categories[0];
+}
+function catIndex(id){
+  for(var i=0;i<state.categories.length;i++) if(state.categories[i].id===id) return i;
+  return -1;
+}
+function sub(catId, subId){
+  var c = cat(catId);
+  for(var i=0;i<c.subs.length;i++) if(c.subs[i].id===subId) return c.subs[i];
+  return c.subs[0];
+}
 function quad(id){ for(var i=0;i<QUADS.length;i++) if(QUADS[i].id===id) return QUADS[i]; return QUADS[0]; }
 function stat(id){ return state.statuses[id] || state.statuses.todo; }
-function tasksOf(catId, quadId){
+function tasksIn(f){
+  f = f || {};
   return state.tasks.filter(function(t){
-    return (!catId || t.category===catId) && (!quadId || t.quadrant===quadId);
+    return (!f.cat || t.category===f.cat) && (!f.sub || t.sub===f.sub) && (!f.quad || t.quadrant===f.quad);
   });
 }
 function byId(id){ for(var i=0;i<state.tasks.length;i++) if(state.tasks[i].id===id) return state.tasks[i]; return null; }
@@ -532,8 +626,19 @@ function dueInfo(iso){
   return {days:days, label:label, cls: days<0 ? "overdue" : (days<=2 ? "due-soon" : "")};
 }
 function pct(n,d){ return d ? Math.round(n*100/d) : 0; }
+function countsOf(list){
+  var done=0, doing=0;
+  list.forEach(function(t){ if(t.status==="done") done++; else if(t.status==="doing") doing++; });
+  return {all:list.length, done:done, doing:doing, todo:list.length-done-doing};
+}
+function barHTML(c){
+  if(!c.all) return "";
+  return '<i style="width:'+pct(c.done,c.all)+'%;background:'+STATUS_COLORS.done+'"></i>'+
+         '<i style="width:'+pct(c.doing,c.all)+'%;background:'+STATUS_COLORS.doing+'"></i>'+
+         '<i style="width:'+pct(c.todo,c.all)+'%;background:'+STATUS_COLORS.todo+'"></i>';
+}
 
-/* ============ rendering ============ */
+/* ============ shared pieces ============ */
 function statusGroupHTML(t){
   var out = '<div class="status-group" role="group" aria-label="Status">';
   STATUS_IDS.forEach(function(sid){
@@ -547,12 +652,15 @@ function statusGroupHTML(t){
 
 function taskHTML(t, opts){
   opts = opts || {};
-  var c = cat(t.category), q = quad(t.quadrant), s = stat(t.status);
+  var c = cat(t.category), sc = sub(t.category, t.sub), q = quad(t.quadrant), s = stat(t.status);
   var d = dueInfo(t.due);
   var tags = "";
-  if(opts.tags !== false){
+  if(opts.tags === "full"){
     tags += '<span class="tag" style="--tc:'+c.color+'">'+c.icon+" "+esc(c.name)+'</span>';
+    tags += '<span class="tag" style="--tc:'+c.color+'">'+sc.icon+" "+esc(sc.name)+'</span>';
     tags += '<span class="tag" style="--tc:'+q.color+'">'+q.icon+" "+esc(q.name)+'</span>';
+  }else if(opts.tags === "sub"){
+    tags += '<span class="tag" style="--tc:'+c.color+'">'+sc.icon+" "+esc(sc.name)+'</span>';
   }
   tags += '<span class="tag" style="--tc:'+STATUS_COLORS[t.status]+'">'+s.icon+" "+esc(s.label)+'</span>';
   if(d) tags += '<span class="tag '+d.cls+'" style="--tc:'+(d.cls?"":"#64748b")+'">📅 '+
@@ -573,8 +681,8 @@ function taskHTML(t, opts){
   '</article>';
 }
 
-function listHTML(items, opts, emptyHTML){
-  if(!items.length) return emptyHTML;
+function listHTML(items, opts, empty){
+  if(!items.length) return empty;
   var order = {todo:0, doing:1, done:2};
   items = items.slice().sort(function(a,b){
     if(order[a.status] !== order[b.status]) return order[a.status]-order[b.status];
@@ -588,19 +696,18 @@ function listHTML(items, opts, emptyHTML){
 function emptyHTML(icon, title, text, btn){
   return '<div class="empty"><span class="e-ico">'+icon+'</span><h3>'+esc(title)+'</h3><p>'+esc(text)+'</p>'+
     (btn ? '<button class="btn primary" data-act="add" '+(btn.cat?'data-cat="'+btn.cat+'" ':'')+
-           (btn.quad?'data-quad="'+btn.quad+'" ':'')+'>＋ '+esc(btn.label)+'</button>' : '')+'</div>';
+           (btn.sub?'data-sub="'+btn.sub+'" ':'')+(btn.quad?'data-quad="'+btn.quad+'" ':'')+
+           '>＋ '+esc(btn.label)+'</button>' : '')+'</div>';
 }
 
 function statsHTML(){
-  var all = state.tasks, done = all.filter(function(t){return t.status==="done";}).length;
-  var doing = all.filter(function(t){return t.status==="doing";}).length;
-  var today = todayISO();
+  var all = state.tasks, c = countsOf(all), today = todayISO();
   var late = all.filter(function(t){ return t.status!=="done" && t.due && t.due < today; }).length;
   var tiles = [
-    {val:"all",     n:all.length, label:"Total",                color:"var(--brand)",       num:""},
-    {val:"doing",   n:doing,      label:stat("doing").label,    color:STATUS_COLORS.doing,  num:STATUS_COLORS.doing},
-    {val:"done",    n:done,       label:stat("done").label,     color:STATUS_COLORS.done,   num:STATUS_COLORS.done},
-    {val:"overdue", n:late,       label:"Overdue",              color:"#ef4444",            num:late?"#ef4444":""}
+    {val:"all",     n:c.all,   label:"Total",             color:"var(--brand)",      num:""},
+    {val:"doing",   n:c.doing, label:stat("doing").label, color:STATUS_COLORS.doing, num:STATUS_COLORS.doing},
+    {val:"done",    n:c.done,  label:stat("done").label,  color:STATUS_COLORS.done,  num:STATUS_COLORS.done},
+    {val:"overdue", n:late,    label:"Overdue",           color:"#ef4444",           num:late?"#ef4444":""}
   ];
   return '<div class="stats">'+ tiles.map(function(x){
     var on = ui.view === "all" && ui.fStat === x.val;
@@ -616,43 +723,102 @@ function greeting(){
   return h<12 ? "Good morning" : (h<18 ? "Good afternoon" : "Good evening");
 }
 
+function crumbHTML(parts){
+  return '<div class="crumb">'+ parts.map(function(p,i){
+    if(p.act) return '<button class="back'+(i?" plain":"")+'" data-act="'+p.act+'"'+
+      (p.cat?' data-cat="'+p.cat+'"':'')+'>'+(i?"":"← ")+esc(p.label)+'</button>';
+    return '<span class="crumb-now">'+esc(p.label)+'</span>';
+  }).join('<span class="crumb-sep">/</span>') + '</div>';
+}
+
+/* ============ dashboard: main categories ============ */
 function renderDashboard(){
   var cards = state.categories.map(function(c){
-    var list = tasksOf(c.id);
-    var done = list.filter(function(t){return t.status==="done";}).length;
-    var doing = list.filter(function(t){return t.status==="doing";}).length;
-    var todo = list.length - done - doing;
-    var bar = list.length
-      ? '<i style="width:'+pct(done,list.length)+'%;background:'+STATUS_COLORS.done+'"></i>'+
-        '<i style="width:'+pct(doing,list.length)+'%;background:'+STATUS_COLORS.doing+'"></i>'+
-        '<i style="width:'+pct(todo,list.length)+'%;background:'+STATUS_COLORS.todo+'"></i>'
-      : '';
-    var chips = QUADS.map(function(q){
-      var n = tasksOf(c.id,q.id).filter(function(t){return t.status!=="done";}).length;
-      return '<span class="qchip" style="--qc:'+q.color+'">'+q.icon+" "+n+'</span>';
+    var counts = countsOf(tasksIn({cat:c.id}));
+    var chips = c.subs.map(function(s){
+      var open = tasksIn({cat:c.id, sub:s.id}).filter(function(t){return t.status!=="done";}).length;
+      return '<span class="qchip" style="--qc:'+c.color+'">'+s.icon+" "+esc(s.name)+
+             (open?' <b>'+open+'</b>':'')+'</span>';
     }).join("");
-    return '<button class="cat-card" data-act="open-cat" data-cat="'+c.id+'" style="--accent:'+c.color+'">'+
-      '<div class="cat-top"><span class="cat-emoji">'+c.icon+'</span>'+
-        '<span><span class="cat-name">'+esc(c.name)+'</span>'+
-        '<span class="cat-sub">'+list.length+' task'+(list.length===1?"":"s")+' · '+
-          pct(done,list.length)+'% '+esc(stat("done").label.toLowerCase())+'</span></span></div>'+
-      '<div class="bar">'+bar+'</div>'+
-      '<div class="quad-mini">'+chips+'</div>'+
-      '<div class="cat-foot"><span>Open the 4 priority tabs</span><span class="go">→</span></div>'+
-    '</button>';
+    return '<div class="card-wrap">'+
+      '<button class="cat-card" data-act="open-cat" data-cat="'+c.id+'" style="--accent:'+c.color+'">'+
+        '<div class="cat-top"><span class="cat-emoji">'+c.icon+'</span>'+
+          '<span><span class="cat-name">'+esc(c.name)+'</span>'+
+          '<span class="cat-sub">'+c.subs.length+' group'+(c.subs.length===1?"":"s")+' · '+
+            counts.all+' task'+(counts.all===1?"":"s")+
+            (counts.done ? ' · '+counts.done+' '+esc(stat("done").label.toLowerCase()) : '')+
+            '</span></span></div>'+
+        '<div class="bar">'+barHTML(counts)+'</div>'+
+        '<div class="quad-mini">'+chips+'</div>'+
+        '<div class="cat-foot"><span>Open groups &amp; priority tabs</span><span class="go">→</span></div>'+
+      '</button>'+
+      '<button class="card-edit" data-act="edit-cat" data-cat="'+c.id+'" title="Edit this area" '+
+        'aria-label="Edit '+esc(c.name)+'">✏️</button>'+
+    '</div>';
   }).join("");
 
   return '<section class="hero"><div>'+
       '<h2>'+greeting()+' <span class="wave">👋</span></h2>'+
-      '<p>Pick a life area below, then sort what you do into the four priority tabs. Tap a status pill any time to move a task along.</p>'+
+      '<p>Pick a life area, then a group inside it, then sort what you do into the four priority tabs. '+
+      'Tap a status pill any time to move a task along.</p>'+
     '</div>'+ statsHTML() +'</section>'+
-    '<div class="grid-cats">'+cards+'</div>';
+    '<div class="grid-cats">'+cards+
+      '<button class="add-card" data-act="add-cat">'+
+        '<span class="plus">＋</span><span><b>Add an area</b><small>It starts with 4 groups you can rename</small></span>'+
+      '</button>'+
+    '</div>';
 }
 
+/* ============ one category: its groups ============ */
 function renderCategory(){
   var c = cat(ui.openCat);
+  var total = countsOf(tasksIn({cat:c.id}));
+  var cards = c.subs.map(function(s){
+    var counts = countsOf(tasksIn({cat:c.id, sub:s.id}));
+    var chips = QUADS.map(function(q){
+      var n = tasksIn({cat:c.id, sub:s.id, quad:q.id}).filter(function(t){return t.status!=="done";}).length;
+      return '<span class="qchip" style="--qc:'+q.color+'">'+q.icon+" "+n+'</span>';
+    }).join("");
+    return '<div class="card-wrap">'+
+      '<button class="cat-card sub-card" data-act="open-sub" data-cat="'+c.id+'" data-sub="'+s.id+'" '+
+        'style="--accent:'+c.color+'">'+
+        '<div class="cat-top"><span class="cat-emoji">'+s.icon+'</span>'+
+          '<span><span class="cat-name">'+esc(s.name)+'</span>'+
+          '<span class="cat-sub">'+counts.all+' task'+(counts.all===1?"":"s")+' · '+
+            counts.done+' '+esc(stat("done").label.toLowerCase())+'</span></span></div>'+
+        '<div class="bar">'+barHTML(counts)+'</div>'+
+        '<div class="quad-mini">'+chips+'</div>'+
+        '<div class="cat-foot"><span>Open the 4 priority tabs</span><span class="go">→</span></div>'+
+      '</button>'+
+      '<button class="card-edit" data-act="edit-cat" data-cat="'+c.id+'" title="Edit groups" '+
+        'aria-label="Edit groups">✏️</button>'+
+    '</div>';
+  }).join("");
+
+  return crumbHTML([{label:"All areas", act:"home"},{label:c.name}])+
+    '<section class="cat-head" style="--accent:'+c.color+'">'+
+      '<span class="cat-emoji">'+c.icon+'</span>'+
+      '<div><h2>'+esc(c.name)+'</h2><div class="cat-sub">'+c.subs.length+' group'+
+        (c.subs.length===1?"":"s")+' · '+total.all+' task'+(total.all===1?"":"s")+' · '+
+        total.done+' '+esc(stat("done").label.toLowerCase())+'</div></div>'+
+      '<div class="spacer"></div>'+
+      '<button class="btn sm ghost" data-act="edit-cat" data-cat="'+c.id+'">✏️ Edit area</button>'+
+      '<button class="btn sm primary" data-act="add" data-cat="'+c.id+'">＋ Add task</button>'+
+    '</section>'+
+    '<div class="group-title"><span>Groups inside '+esc(c.name)+'</span><span class="line"></span>'+
+      '<span>'+c.subs.length+'</span></div>'+
+    '<div class="grid-cats">'+cards+
+      '<button class="add-card" data-act="add-sub" data-cat="'+c.id+'">'+
+        '<span class="plus">＋</span><span><b>Add a group</b><small>Another slice of '+esc(c.name)+'</small></span>'+
+      '</button>'+
+    '</div>';
+}
+
+/* ============ one group: the 4 priority tabs ============ */
+function renderSub(){
+  var c = cat(ui.openCat), s = sub(ui.openCat, ui.openSub);
   var tabs = QUADS.map(function(q){
-    var list = tasksOf(c.id,q.id);
+    var list = tasksIn({cat:c.id, sub:s.id, quad:q.id});
     var open = list.filter(function(t){return t.status!=="done";}).length;
     return '<button class="tab" role="tab" data-act="tab" data-quad="'+q.id+'" '+
       'aria-selected="'+(ui.tab===q.id)+'" style="--qc:'+q.color+'">'+
@@ -660,31 +826,33 @@ function renderCategory(){
       '<span class="t-meta"><span>'+esc(q.hint)+'</span><span class="count">'+open+' open</span></span></button>';
   }).join("");
   var q = quad(ui.tab);
-  var items = tasksOf(c.id, q.id);
-  var done = tasksOf(c.id).filter(function(t){return t.status==="done";}).length;
+  var items = tasksIn({cat:c.id, sub:s.id, quad:q.id});
+  var counts = countsOf(tasksIn({cat:c.id, sub:s.id}));
 
-  return '<div class="crumb"><button class="back" data-act="home">← All categories</button>'+
-      '<span style="color:var(--muted);font-size:13px;font-weight:600">'+esc(c.name)+' breakdown</span></div>'+
+  return crumbHTML([{label:"All areas", act:"home"},{label:c.name, act:"open-cat", cat:c.id},{label:s.name}])+
     '<section class="cat-head" style="--accent:'+c.color+'">'+
-      '<span class="cat-emoji">'+c.icon+'</span>'+
-      '<div><h2>'+esc(c.name)+'</h2><div class="cat-sub">'+tasksOf(c.id).length+' task'+
-        (tasksOf(c.id).length===1?"":"s")+' · '+done+' '+esc(stat("done").label.toLowerCase())+'</div></div>'+
+      '<span class="cat-emoji">'+s.icon+'</span>'+
+      '<div><h2>'+esc(s.name)+'</h2><div class="cat-sub">'+c.icon+' '+esc(c.name)+' · '+
+        counts.all+' task'+(counts.all===1?"":"s")+' · '+counts.done+' '+
+        esc(stat("done").label.toLowerCase())+'</div></div>'+
       '<div class="spacer"></div>'+
-      '<button class="btn sm ghost" data-act="rename-cat">✏️ Rename</button>'+
-      '<button class="btn sm primary" data-act="add" data-cat="'+c.id+'" data-quad="'+q.id+'">＋ Add here</button>'+
+      '<button class="btn sm ghost" data-act="edit-cat" data-cat="'+c.id+'">✏️ Rename</button>'+
+      '<button class="btn sm primary" data-act="add" data-cat="'+c.id+'" data-sub="'+s.id+'" data-quad="'+q.id+'">＋ Add here</button>'+
     '</section>'+
     '<div class="tabs" role="tablist" aria-label="Priority quadrants">'+tabs+'</div>'+
     '<div class="group-title"><span>'+q.icon+' '+esc(q.name)+'</span><span class="line"></span>'+
       '<span>'+items.length+'</span></div>'+
     listHTML(items, {tags:false}, emptyHTML(q.icon, "Nothing here yet",
-      'No "'+q.name+'" tasks in '+c.name+' — that is a good thing, or a good place to start.',
-      {label:"Add a task here", cat:c.id, quad:q.id}));
+      'No "'+q.name+'" tasks in '+s.name+' — that is a good thing, or a good place to start.',
+      {label:"Add a task here", cat:c.id, sub:s.id, quad:q.id}));
 }
 
+/* ============ all activities ============ */
 function filterSummary(n){
   var what = ui.fStat === "all" ? "task" :
              (ui.fStat === "overdue" ? "overdue task" : stat(ui.fStat).label.toLowerCase()+" task");
-  var where = ui.fCat === "all" ? "" : " in "+cat(ui.fCat).name;
+  var where = ui.fCat === "all" ? "" : " in "+cat(ui.fCat).name +
+              (ui.fSub === "all" ? "" : " › "+sub(ui.fCat, ui.fSub).name);
   if(ui.fStat === "all" && ui.fCat === "all" && !ui.search.trim()) return "Showing all "+n+" task"+(n===1?"":"s");
   return "Showing "+n+" "+what+(n===1?"":"s")+where+" of "+state.tasks.length+" total";
 }
@@ -693,6 +861,7 @@ function renderAll(){
   var term = ui.search.trim().toLowerCase();
   var items = state.tasks.filter(function(t){
     if(ui.fCat !== "all" && t.category !== ui.fCat) return false;
+    if(ui.fCat !== "all" && ui.fSub !== "all" && t.sub !== ui.fSub) return false;
     if(ui.fStat === "overdue"){ if(t.status === "done" || !t.due || t.due >= todayISO()) return false; }
     else if(ui.fStat !== "all" && t.status !== ui.fStat) return false;
     if(term && (t.title+" "+(t.notes||"")).toLowerCase().indexOf(term) === -1) return false;
@@ -703,6 +872,17 @@ function renderAll(){
       return '<button class="chip" data-act="fcat" data-val="'+c.id+'" style="--c:'+c.color+'" aria-pressed="'+
         (ui.fCat===c.id)+'">'+c.icon+' '+esc(c.name)+'</button>';
     }).join("");
+  var subChips = "";
+  if(ui.fCat !== "all"){
+    var c = cat(ui.fCat);
+    subChips = '<div class="toolbar" style="margin-top:-4px"><div class="chips sub-chips">'+
+      '<button class="chip" data-act="fsub" data-val="all" style="--c:'+c.color+'" aria-pressed="'+
+        (ui.fSub==="all")+'">All of '+esc(c.name)+'</button>'+
+      c.subs.map(function(s){
+        return '<button class="chip" data-act="fsub" data-val="'+s.id+'" style="--c:'+c.color+'" aria-pressed="'+
+          (ui.fSub===s.id)+'">'+s.icon+' '+esc(s.name)+'</button>';
+      }).join("")+'</div></div>';
+  }
   var statChips = '<button class="chip" data-act="fstat" data-val="all" aria-pressed="'+(ui.fStat==="all")+'">Any status</button>'+
     STATUS_IDS.map(function(sid){
       return '<button class="chip" data-act="fstat" data-val="'+sid+'" style="--c:'+STATUS_COLORS[sid]+'" aria-pressed="'+
@@ -712,19 +892,20 @@ function renderAll(){
       (ui.fStat==="overdue")+'">⏰ Overdue</button>';
 
   return '<section class="hero"><div><h2>All activities 📋</h2>'+
-      '<p>Every task from every category and priority tab, in one master list. Tags show where each one lives.</p></div>'+
-      statsHTML()+'</section>'+
+      '<p>Every task from every area, group and priority tab, in one master list. '+
+      'Tags show exactly where each one lives.</p></div>'+ statsHTML() +'</section>'+
     '<div class="toolbar">'+
       '<label class="search">🔎<input id="searchInput" type="search" placeholder="Search tasks and notes…" value="'+
         esc(ui.search)+'" aria-label="Search tasks"></label>'+
       '<button class="btn primary" data-act="add">＋ New task</button>'+
     '</div>'+
     '<div class="toolbar" style="margin-top:0"><div class="chips">'+catChips+'</div></div>'+
+    subChips+
     '<div class="toolbar" style="margin-top:-4px"><div class="chips">'+statChips+'</div></div>'+
     '<div class="group-title"><span>'+esc(filterSummary(items.length))+'</span><span class="line"></span>'+
       (ui.fStat!=="all" || ui.fCat!=="all" || ui.search.trim() ?
         '<button class="btn sm ghost" data-act="clear-filters">✕ Clear filters</button>' : '')+'</div>'+
-    listHTML(items, {tags:true}, emptyHTML(ui.fStat==="overdue" ? "🎈" : "🗒️",
+    listHTML(items, {tags:"full"}, emptyHTML(ui.fStat==="overdue" ? "🎈" : "🗒️",
       ui.fStat==="overdue" ? "Nothing is overdue" : "No tasks match",
       state.tasks.length ? (ui.fStat==="overdue" ? "You are on top of every due date. Nice."
                                                  : "Try clearing the filters or the search box.")
@@ -737,6 +918,7 @@ function render(){
   $("#themeBtn").textContent = state.theme === "dark" ? "☀️" : "🌙";
   var m = $("#main");
   if(ui.view === "all") m.innerHTML = renderAll();
+  else if(ui.openCat && ui.openSub) m.innerHTML = renderSub();
   else if(ui.openCat) m.innerHTML = renderCategory();
   else m.innerHTML = renderDashboard();
   Array.prototype.forEach.call(document.querySelectorAll("#viewSwitch button"), function(b){
@@ -749,16 +931,31 @@ var draft = null;
 
 function openTask(id, prefill){
   var t = id ? byId(id) : null;
-  draft = t ? {id:t.id, category:t.category, quadrant:t.quadrant, status:t.status}
-            : {id:null,
-               category:(prefill && prefill.cat) || (ui.openCat || state.categories[0].id),
-               quadrant:(prefill && prefill.quad) || (ui.openCat ? ui.tab : "q1"),
-               status:"todo"};
+  var c;
+  if(t) c = cat(t.category);
+  else c = cat((prefill && prefill.cat) || ui.openCat || state.categories[0].id);
+  var sid;
+  if(t) sid = t.sub;
+  else if(prefill && prefill.sub) sid = sub(c.id, prefill.sub).id;
+  else if(ui.openCat === c.id && ui.openSub) sid = ui.openSub;
+  else sid = c.subs[0].id;
+
+  draft = {id: t ? t.id : null, category:c.id, sub:sid,
+           quadrant: t ? t.quadrant : ((prefill && prefill.quad) || (ui.openSub ? ui.tab : "q1")),
+           status: t ? t.status : "todo"};
   var el = $("#taskModal");
   el.innerHTML = taskSheetHTML(t);
   el.hidden = false;
   syncPickers();
   setTimeout(function(){ var i = $("#f_title"); if(i){ i.focus(); i.select(); } }, 40);
+}
+
+function subPickerHTML(){
+  var c = cat(draft.category);
+  return c.subs.map(function(s){
+    return '<button type="button" class="opt" data-pick="sub" data-val="'+s.id+'" style="--oc:'+c.color+'">'+
+      '<span class="o-ico">'+s.icon+'</span><span>'+esc(s.name)+'</span></button>';
+  }).join("");
 }
 
 function taskSheetHTML(t){
@@ -780,8 +977,10 @@ function taskSheetHTML(t){
       '<button class="icon-btn x" data-act="close" aria-label="Close">✕</button></div>'+
     '<div class="field"><label for="f_title">What do you need to do?</label>'+
       '<input class="input" id="f_title" placeholder="e.g. Pay the electricity bill" value="'+esc(t?t.title:"")+'"></div>'+
-    '<div class="field"><label>Which area of life?</label><div class="picker cats">'+catOpts+'</div></div>'+
-    '<div class="field"><label>How urgent &amp; important is it?</label><div class="picker">'+quadOpts+'</div></div>'+
+    '<div class="field"><label>1 · Which area of life?</label><div class="picker cats">'+catOpts+'</div></div>'+
+    '<div class="field"><label>2 · Which group inside it?</label>'+
+      '<div class="picker cats" id="subPicker">'+subPickerHTML()+'</div></div>'+
+    '<div class="field"><label>3 · How urgent &amp; important is it?</label><div class="picker">'+quadOpts+'</div></div>'+
     '<div class="field"><label>Status</label><div class="picker cats">'+statOpts+'</div></div>'+
     '<div class="row2">'+
       '<div class="field"><label for="f_due">Due date (optional)</label>'+
@@ -808,35 +1007,53 @@ function saveTask(){
   var due = $("#f_due").value, notes = $("#f_notes").value.trim();
   var existing = draft.id ? byId(draft.id) : null;
   var wasDone = existing && existing.status === "done";
+  var newId = null;
   if(existing){
     existing.title = title; existing.notes = notes; existing.due = due;
-    existing.category = draft.category; existing.quadrant = draft.quadrant; existing.status = draft.status;
+    existing.category = draft.category; existing.sub = draft.sub;
+    existing.quadrant = draft.quadrant; existing.status = draft.status;
     if(draft.status === "done" && !wasDone) existing.done_at = Date.now();
   }else{
-    state.tasks.unshift({id:"t"+Date.now()+Math.random().toString(36).slice(2,6), title:title, notes:notes, due:due,
-      category:draft.category, quadrant:draft.quadrant, status:draft.status, created:Date.now(),
+    newId = uid("t");
+    state.tasks.unshift({id:newId, title:title, notes:notes, due:due, category:draft.category, sub:draft.sub,
+      quadrant:draft.quadrant, status:draft.status, created:Date.now(),
       done_at: draft.status === "done" ? Date.now() : 0});
   }
   save(); closeModals(); render();
   if(draft.status === "done" && !wasDone){
-    var node = document.querySelector('[data-task="'+(existing?existing.id:state.tasks[0].id)+'"]');
-    celebrate(node);
+    celebrate(document.querySelector('[data-task="'+(existing ? existing.id : newId)+'"]'));
   }else{
     toast(existing ? "Task updated ✅" : "Task added 🎯");
   }
 }
 
-/* ============ settings modal ============ */
-function openSettings(focusCat){
-  var rows = state.categories.map(function(c,i){
-    var sw = PALETTE.map(function(p){
-      return '<button type="button" class="sw" data-act="swatch" data-i="'+i+'" data-color="'+p+'" '+
-        'style="background:'+p+'" aria-pressed="'+(c.color===p)+'" aria-label="Color '+p+'"></button>';
-    }).join("");
-    return '<div class="set-row">'+
-      '<input class="input emoji" data-set="cat-icon" data-i="'+i+'" value="'+esc(c.icon)+'" maxlength="4" aria-label="Category icon">'+
-      '<input class="input grow" data-set="cat-name" data-i="'+i+'" value="'+esc(c.name)+'" maxlength="28" aria-label="Category name">'+
-      '<span class="swatches">'+sw+'</span></div>';
+/* ============ settings + category editor ============ */
+function openSettings(){ ui.setMode = {mode:"settings"}; renderSetModal(); }
+function openEditor(catId, from){ ui.setMode = {mode:"editor", cat:catId, from:from||"settings"}; renderSetModal(); }
+
+function swatchesHTML(c){
+  return PALETTE.map(function(p){
+    return '<button type="button" class="sw" data-act="swatch" data-c="'+c.id+'" data-color="'+p+'" '+
+      'style="background:'+p+'" aria-pressed="'+(c.color===p)+'" aria-label="Color '+p+'"></button>';
+  }).join("");
+}
+
+function settingsPaneHTML(){
+  var rows = state.categories.map(function(c){
+    var n = tasksIn({cat:c.id}).length;
+    return '<div class="set-block" style="--accent:'+c.color+'">'+
+      '<div class="set-row">'+
+        '<input class="input emoji" data-set="cat-icon" data-c="'+c.id+'" value="'+esc(c.icon)+'" maxlength="4" aria-label="Area icon">'+
+        '<input class="input grow" data-set="cat-name" data-c="'+c.id+'" value="'+esc(c.name)+'" maxlength="28" aria-label="Area name">'+
+        '<span class="swatches">'+swatchesHTML(c)+'</span>'+
+      '</div>'+
+      '<div class="set-row tight">'+
+        '<button class="btn sm ghost" data-act="edit-cat" data-cat="'+c.id+'">🗂️ '+c.subs.length+' group'+
+          (c.subs.length===1?"":"s")+' · edit</button>'+
+        '<span class="mini-note">'+n+' task'+(n===1?"":"s")+'</span>'+
+        (state.categories.length > 1 ?
+          '<button class="btn sm danger" data-act="del-cat" data-cat="'+c.id+'">🗑️ Remove area</button>' : '')+
+      '</div></div>';
   }).join("");
   var srows = STATUS_IDS.map(function(sid){
     return '<div class="set-row">'+
@@ -845,12 +1062,13 @@ function openSettings(focusCat){
       '<span class="tag" style="--tc:'+STATUS_COLORS[sid]+'">'+stat(sid).icon+' preview</span></div>';
   }).join("");
 
-  var el = $("#setModal");
-  el.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">'+
+  return '<div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">'+
     '<div class="sheet-head"><h3>⚙️ Make it yours</h3>'+
       '<button class="icon-btn x" data-act="close" aria-label="Close">✕</button></div>'+
-    '<p class="note">Rename anything here — your four life areas, the three status labels, and the little message that pops up when you finish something.</p>'+
-    '<div class="sec-title"><span>Your 4 categories</span><span class="line"></span></div>'+ rows +
+    '<p class="note">Rename or recolor anything — your life areas and the groups inside them, the three status '+
+      'labels, and the little message that pops up when you finish something.</p>'+
+    '<div class="sec-title"><span>Your areas ('+state.categories.length+')</span><span class="line"></span></div>'+ rows +
+    '<button class="btn add-line" data-act="add-cat">＋ Add another area</button>'+
     '<div class="sec-title"><span>Status labels</span><span class="line"></span></div>'+ srows +
     '<div class="sec-title"><span>Celebration message</span><span class="line"></span></div>'+
     '<div class="field"><input class="input" data-set="cheer" value="'+esc(state.cheer)+'" maxlength="60" '+
@@ -859,16 +1077,65 @@ function openSettings(focusCat){
       '<button class="btn danger grow" data-act="reset">Reset everything</button>'+
       '<button class="btn primary" data-act="close">Done</button>'+
     '</div></div>';
+}
+
+function editorPaneHTML(){
+  var c = cat(ui.setMode.cat);
+  var subs = c.subs.map(function(s){
+    var n = tasksIn({cat:c.id, sub:s.id}).length;
+    return '<div class="set-row">'+
+      '<input class="input emoji" data-set="sub-icon" data-c="'+c.id+'" data-s="'+s.id+'" value="'+esc(s.icon)+
+        '" maxlength="4" aria-label="Group icon">'+
+      '<input class="input grow" data-set="sub-name" data-c="'+c.id+'" data-s="'+s.id+'" value="'+esc(s.name)+
+        '" maxlength="28" aria-label="Group name">'+
+      '<span class="mini-note">'+n+' task'+(n===1?"":"s")+'</span>'+
+      (c.subs.length > 1 ? '<button class="mini del" data-act="del-sub" data-cat="'+c.id+'" data-sub="'+s.id+
+        '" title="Remove group" aria-label="Remove group">🗑️</button>' : '')+
+    '</div>';
+  }).join("");
+
+  return '<div class="sheet" role="dialog" aria-modal="true" aria-label="Edit area">'+
+    '<div class="sheet-head">'+
+      '<button class="icon-btn" data-act="to-settings" title="Back to settings" aria-label="Back">←</button>'+
+      '<h3>Edit “'+esc(c.name)+'”</h3>'+
+      '<button class="icon-btn x" data-act="close" aria-label="Close">✕</button></div>'+
+    '<div class="sec-title"><span>Area name, icon &amp; color</span><span class="line"></span></div>'+
+    '<div class="set-row">'+
+      '<input class="input emoji" data-set="cat-icon" data-c="'+c.id+'" value="'+esc(c.icon)+'" maxlength="4" aria-label="Area icon">'+
+      '<input class="input grow" data-set="cat-name" data-c="'+c.id+'" value="'+esc(c.name)+'" maxlength="28" aria-label="Area name">'+
+    '</div>'+
+    '<div class="set-row"><span class="swatches wide">'+swatchesHTML(c)+'</span></div>'+
+    '<div class="sec-title"><span>Groups inside '+esc(c.name)+' ('+c.subs.length+')</span><span class="line"></span></div>'+
+    subs +
+    '<button class="btn add-line" data-act="add-sub" data-cat="'+c.id+'">＋ Add a group</button>'+
+    '<div class="sheet-foot">'+
+      (state.categories.length > 1 ?
+        '<button class="btn danger grow" data-act="del-cat" data-cat="'+c.id+'">🗑️ Remove this area</button>' : '')+
+      '<button class="btn primary" data-act="close">Done</button>'+
+    '</div></div>';
+}
+
+function renderSetModal(keepScroll){
+  var el = $("#setModal");
+  var old = el.querySelector(".sheet");
+  var top = keepScroll && old ? old.scrollTop : 0;
+  if(!ui.setMode){ el.hidden = true; el.innerHTML = ""; return; }
+  el.innerHTML = ui.setMode.mode === "editor" ? editorPaneHTML() : settingsPaneHTML();
   el.hidden = false;
-  if(focusCat){
-    var idx = state.categories.map(function(c){return c.id;}).indexOf(focusCat);
-    var inp = document.querySelector('#setModal [data-set="cat-name"][data-i="'+idx+'"]');
-    if(inp){ inp.focus(); inp.select(); }
-  }
+  var now = el.querySelector(".sheet");
+  if(now && top) now.scrollTop = top;
+}
+
+function focusSetField(sel){
+  setTimeout(function(){
+    var i = document.querySelector(sel);
+    if(i){ i.focus(); if(i.select) i.select(); i.scrollIntoView({block:"center", behavior:"smooth"}); }
+  }, 60);
 }
 
 function closeModals(){
   $("#taskModal").hidden = true; $("#taskModal").innerHTML = "";
+  ui.setMode = null;
   $("#setModal").hidden = true;  $("#setModal").innerHTML = "";
 }
 
@@ -902,7 +1169,7 @@ function celebrate(node){
   for(var i=0;i<18;i++){
     var p = document.createElement("i");
     p.className = "confetti";
-    var ang = (Math.PI * (0.12 + 0.76*(i/17))) ;
+    var ang = Math.PI * (0.12 + 0.76*(i/17));
     var dist = 60 + Math.random()*90;
     p.style.left = x + "px"; p.style.top = y + "px";
     p.style.background = colors[i % colors.length];
@@ -920,16 +1187,59 @@ function setStatus(id, sid){
   var t = byId(id); if(!t || t.status === sid) return;
   var wasDone = t.status === "done";
   t.status = sid;
-  if(sid === "done"){ t.done_at = Date.now(); }
+  if(sid === "done") t.done_at = Date.now();
   save();
   var el = document.querySelector('[data-task="'+id+'"]');
   if(sid === "done" && !wasDone && el){
     celebrate(el);
-    // let the animation breathe before the list re-sorts
-    setTimeout(function(){ render(); }, 620);
+    setTimeout(function(){ render(); }, 620);   // let the pop finish before the list re-sorts
   }else{
     render();
   }
+}
+
+/* ============ areas & groups ============ */
+function addCategory(){
+  var i = state.categories.length;
+  var c = {id:uid("c"), name:"New area", icon:NEW_ICONS[i % NEW_ICONS.length], color:PALETTE[i % PALETTE.length],
+    subs:[1,2,3,4].map(function(n,k){ return {id:uid("s"), name:"Group "+n, icon:SUB_ICONS[k]}; })};
+  state.categories.push(c);
+  save(); render(); openEditor(c.id, "settings");
+  focusSetField('[data-set="cat-name"][data-c="'+c.id+'"]');
+}
+
+function addSub(catId){
+  var c = cat(catId);
+  var s = {id:uid("s"), name:"New group", icon:SUB_ICONS[c.subs.length % SUB_ICONS.length]};
+  c.subs.push(s);
+  save(); render();
+  openEditor(c.id, ui.setMode && ui.setMode.from ? ui.setMode.from : "card");
+  focusSetField('[data-set="sub-name"][data-s="'+s.id+'"]');
+}
+
+function deleteCategory(catId){
+  if(state.categories.length < 2){ toast("Keep at least one area 🙂"); return; }
+  var c = cat(catId), n = tasksIn({cat:c.id}).length;
+  if(!confirm('Remove the area "'+c.name+'"'+(n ? ' and its '+n+' task'+(n===1?"":"s") : "")+'? This cannot be undone.')) return;
+  state.categories = state.categories.filter(function(x){ return x.id !== catId; });
+  state.tasks = state.tasks.filter(function(t){ return t.category !== catId; });
+  if(ui.openCat === catId){ ui.openCat = null; ui.openSub = null; }
+  if(ui.fCat === catId){ ui.fCat = "all"; ui.fSub = "all"; }
+  save();
+  if(ui.setMode && ui.setMode.mode === "editor") openSettings(); else renderSetModal(true);
+  render(); toast("Area removed 🗑️");
+}
+
+function deleteSub(catId, subId){
+  var c = cat(catId);
+  if(c.subs.length < 2){ toast("Every area needs at least one group 🙂"); return; }
+  var s = sub(catId, subId), n = tasksIn({cat:catId, sub:subId}).length;
+  if(!confirm('Remove the group "'+s.name+'"'+(n ? ' and its '+n+' task'+(n===1?"":"s") : "")+'? This cannot be undone.')) return;
+  c.subs = c.subs.filter(function(x){ return x.id !== subId; });
+  state.tasks = state.tasks.filter(function(t){ return !(t.category === catId && t.sub === subId); });
+  if(ui.openSub === subId) ui.openSub = null;
+  if(ui.fSub === subId) ui.fSub = "all";
+  save(); renderSetModal(true); render(); toast("Group removed 🗑️");
 }
 
 /* ============ events ============ */
@@ -937,17 +1247,31 @@ document.addEventListener("click", function(ev){
   var b = ev.target.closest("[data-act], [data-view], [data-pick]");
   if(!b) return;
 
-  if(b.dataset.view){ ui.view = b.dataset.view; ui.openCat = null; render(); return; }
+  if(b.dataset.view){ ui.view = b.dataset.view; ui.openCat = null; ui.openSub = null; render(); return; }
 
-  if(b.dataset.pick){ draft[b.dataset.pick] = b.dataset.val; syncPickers(); return; }
+  if(b.dataset.pick){
+    var k = b.dataset.pick;
+    draft[k] = b.dataset.val;
+    if(k === "category"){
+      draft.sub = cat(draft.category).subs[0].id;
+      var box = $("#subPicker");
+      if(box) box.innerHTML = subPickerHTML();
+    }
+    syncPickers();
+    return;
+  }
 
-  var act = b.dataset.act;
-  switch(act){
-    case "open-cat": ui.openCat = b.dataset.cat; ui.tab = "q1"; ui.view = "cats"; render(); window.scrollTo({top:0,behavior:"smooth"}); break;
-    case "home": ui.openCat = null; render(); break;
+  switch(b.dataset.act){
+    case "open-cat":
+      ui.view = "cats"; ui.openCat = b.dataset.cat; ui.openSub = null;
+      render(); window.scrollTo({top:0, behavior:"smooth"}); break;
+    case "open-sub":
+      ui.view = "cats"; ui.openCat = b.dataset.cat; ui.openSub = b.dataset.sub; ui.tab = "q1";
+      render(); window.scrollTo({top:0, behavior:"smooth"}); break;
+    case "home": ui.openCat = null; ui.openSub = null; render(); break;
     case "tab": ui.tab = b.dataset.quad; render(); break;
     case "status": setStatus(b.dataset.id, b.dataset.status); break;
-    case "add": openTask(null, {cat:b.dataset.cat, quad:b.dataset.quad}); break;
+    case "add": openTask(null, {cat:b.dataset.cat, sub:b.dataset.sub, quad:b.dataset.quad}); break;
     case "edit": openTask(b.dataset.id); break;
     case "del": {
       var t = byId(b.dataset.id);
@@ -959,33 +1283,35 @@ document.addEventListener("click", function(ev){
     }
     case "save": saveTask(); break;
     case "close": closeModals(); break;
-    case "rename-cat": openSettings(ui.openCat); break;
-    case "swatch": {
-      state.categories[+b.dataset.i].color = b.dataset.color;
-      var sc = document.querySelector("#setModal .sheet");
-      var top = sc ? sc.scrollTop : 0;
-      save(); openSettings(); render();
-      var sc2 = document.querySelector("#setModal .sheet"); if(sc2) sc2.scrollTop = top;
-      break;
-    }
+    case "to-settings": openSettings(); break;
+    case "edit-cat": openEditor(b.dataset.cat, "card"); break;
+    case "add-cat": addCategory(); break;
+    case "add-sub": addSub(b.dataset.cat); break;
+    case "del-cat": deleteCategory(b.dataset.cat); break;
+    case "del-sub": deleteSub(b.dataset.cat, b.dataset.sub); break;
+    case "swatch":
+      cat(b.dataset.c).color = b.dataset.color;
+      save(); renderSetModal(true); render(); break;
     case "reset":
-      if(confirm("Reset all tasks, names and colors back to the starting example? This cannot be undone.")){
-        try{ localStorage.removeItem(KEY); }catch(e){}
+      if(confirm("Reset all tasks, areas, groups and names back to the starting example? This cannot be undone.")){
+        try{ localStorage.removeItem(KEY); localStorage.removeItem(OLD_KEY); }catch(e){}
         state = defaults(); state.tasks = seedTasks(); state.seeded = true;
+        ui.openCat = null; ui.openSub = null; ui.fCat = "all"; ui.fSub = "all"; ui.fStat = "all"; ui.search = "";
         save(); closeModals(); render(); toast("Fresh start ✨");
       }
       break;
     case "stat":
-      ui.view = "all"; ui.openCat = null; ui.fStat = b.dataset.val; ui.fCat = "all"; ui.search = "";
-      render(); window.scrollTo({top:0, behavior:"smooth"});
-      break;
-    case "clear-filters": ui.fStat = "all"; ui.fCat = "all"; ui.search = ""; render(); break;
-    case "fcat": ui.fCat = b.dataset.val; render(); break;
-    case "fstat": ui.fStat = b.dataset.val; render(); break;
+      ui.view = "all"; ui.openCat = null; ui.openSub = null;
+      ui.fStat = b.dataset.val; ui.fCat = "all"; ui.fSub = "all"; ui.search = "";
+      render(); window.scrollTo({top:0, behavior:"smooth"}); break;
+    case "clear-filters":
+      ui.fStat = "all"; ui.fCat = "all"; ui.fSub = "all"; ui.search = ""; render(); break;
+    case "fcat": ui.fCat = b.dataset.val; ui.fSub = "all"; render(); break;
+    case "fsub": ui.fSub = b.dataset.val; render(); break;
   }
 });
 
-/* live typing: search + settings fields */
+/* live typing: search box + every renameable label */
 document.addEventListener("input", function(ev){
   var el = ev.target;
   if(el.id === "searchInput"){
@@ -998,15 +1324,21 @@ document.addEventListener("input", function(ev){
   }
   var key = el.dataset && el.dataset.set;
   if(!key) return;
-  if(key === "cat-name")  state.categories[+el.dataset.i].name = el.value || "Untitled";
-  else if(key === "cat-icon") state.categories[+el.dataset.i].icon = el.value || "•";
+  if(key === "cat-name"){
+    cat(el.dataset.c).name = el.value || "Untitled area";
+    var h = document.querySelector("#setModal .sheet-head h3");
+    if(h && ui.setMode && ui.setMode.mode === "editor") h.textContent = "Edit “"+cat(el.dataset.c).name+"”";
+  }
+  else if(key === "cat-icon") cat(el.dataset.c).icon = el.value || "•";
+  else if(key === "sub-name") sub(el.dataset.c, el.dataset.s).name = el.value || "Untitled group";
+  else if(key === "sub-icon") sub(el.dataset.c, el.dataset.s).icon = el.value || "•";
   else if(key === "st-label") state.statuses[el.dataset.k].label = el.value || "Status";
   else if(key === "st-icon")  state.statuses[el.dataset.k].icon = el.value || "•";
   else if(key === "cheer")    state.cheer = el.value || "Great job! Successfully completed 🎉";
   save(); render();
 });
 
-/* close modal on backdrop click / Esc, quick add with "n" */
+/* backdrop click, Esc, and a couple of keyboard shortcuts */
 document.addEventListener("mousedown", function(ev){
   if(ev.target.classList && ev.target.classList.contains("overlay")) closeModals();
 });
