@@ -374,6 +374,11 @@ textarea.input{resize:vertical; min-height:74px}
   .tab .t-name{font-size:12.6px}
   .tab .t-meta{font-size:10.8px}
   .row2{grid-template-columns:1fr}
+  .row-item{padding:11px 12px; gap:11px; min-height:64px}
+  .row-ico{width:42px; height:42px; font-size:19px; border-radius:13px}
+  .row-name{font-size:15.2px}
+  .question{margin-top:18px}
+  .mstat{padding:8px 12px}
   .picker.cats{grid-template-columns:repeat(auto-fit,minmax(138px,1fr))}
   .picker.cats .opt{padding:9px 10px; font-size:13px; gap:8px}
   .picker.cats .opt span:last-child{min-width:0; word-break:break-word}
@@ -427,6 +432,78 @@ textarea.input{resize:vertical; min-height:74px}
 .btn.add-line:hover{color:var(--text); border-color:color-mix(in srgb,var(--brand) 55%,transparent)}
 .swatches.wide{display:flex; flex-wrap:wrap; gap:6px}
 .sheet-head h3{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+/* ---------- guided rows (one question per screen) ---------- */
+.question{font-size:clamp(21px,3.2vw,27px); margin:24px 2px 5px; letter-spacing:-.02em}
+.q-sub{color:var(--muted); font-size:14.4px; margin:0 2px 16px; max-width:54ch}
+.rows{display:flex; flex-direction:column; gap:10px}
+.row-item{
+  --accent:var(--brand);
+  display:flex; align-items:center; gap:14px; width:100%; text-align:left; min-height:68px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-l); padding:13px 15px;
+  box-shadow:var(--shadow-s);
+  transition:transform .18s cubic-bezier(.2,.8,.3,1), box-shadow .18s, border-color .18s, background .18s;
+}
+.row-item:hover{transform:translateY(-2px); box-shadow:var(--shadow-m);
+  border-color:color-mix(in srgb,var(--accent) 42%,var(--border))}
+.row-item:active{transform:scale(.99)}
+.row-ico{
+  width:46px; height:46px; border-radius:15px; display:grid; place-items:center; font-size:21px; flex:none;
+  background:color-mix(in srgb,var(--accent) 15%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+}
+.row-txt{flex:1; min-width:0}
+.row-name{display:block; font-weight:700; font-size:15.8px; letter-spacing:-.01em}
+.row-meta{display:block; font-size:12.7px; color:var(--muted); font-weight:600; margin-top:2px}
+.row-pill{
+  font-size:11.6px; font-weight:750; padding:4px 10px; border-radius:99px; white-space:nowrap; flex:none;
+  background:color-mix(in srgb,var(--accent) 14%,transparent); color:color-mix(in srgb,var(--accent) 82%,var(--text));
+}
+.chev{color:color-mix(in srgb,var(--accent) 70%,var(--text)); font-size:20px; flex:none; transition:transform .18s}
+.row-item:hover .chev{transform:translateX(3px)}
+.row-item.dashed{background:transparent; border-style:dashed; box-shadow:none; min-height:58px}
+.row-item.dashed .row-ico{background:color-mix(in srgb,var(--brand) 12%,transparent); border-style:dashed; color:var(--brand)}
+.row-item.dashed .row-name{color:var(--text-2); font-weight:650}
+.row-item.dashed:hover{border-color:color-mix(in srgb,var(--brand) 50%,transparent)}
+.quiet-link{
+  background:none; border:0; color:var(--muted); font-size:13.2px; font-weight:650; padding:16px 4px 4px;
+  text-decoration:underline; text-underline-offset:3px; display:block;
+}
+.quiet-link:hover{color:var(--text)}
+
+/* ---------- compact counters ---------- */
+.mini-stats{display:flex; gap:8px; flex-wrap:wrap; margin:0 2px 14px}
+.mstat{
+  --sc:var(--brand); display:inline-flex; align-items:center; gap:7px; min-height:40px; padding:8px 14px;
+  border-radius:999px; border:1px solid var(--border); background:var(--surface); box-shadow:var(--shadow-s);
+  font-size:13px; font-weight:650; color:var(--text-2); transition:.16s;
+}
+.mstat b{font-size:14.6px; color:var(--text); font-variant-numeric:tabular-nums}
+.mstat:hover{transform:translateY(-2px); box-shadow:var(--shadow-m); color:var(--text)}
+.mstat[aria-pressed="true"]{
+  background:color-mix(in srgb,var(--sc) 13%,var(--surface)); border-color:color-mix(in srgb,var(--sc) 55%,transparent);
+  color:color-mix(in srgb,var(--sc) 82%,var(--text));
+}
+.mstat[aria-pressed="true"] b{color:inherit}
+
+/* ---------- one-question-at-a-time task wizard ---------- */
+.wiz-top{display:flex; align-items:center; gap:10px; margin-bottom:15px}
+.wiz-top .wiz-name{font-weight:750; font-size:15px}
+.wiz-dots{display:flex; gap:5px; margin-left:auto}
+.wiz-dots i{width:7px; height:7px; border-radius:99px; background:var(--border); transition:.2s}
+.wiz-dots i.on{background:var(--brand); transform:scale(1.3)}
+.wiz-q{font-size:19.5px; font-weight:750; letter-spacing:-.02em; margin-bottom:4px}
+.wiz-hint{color:var(--muted); font-size:13.3px; margin:0 0 15px}
+.wiz-body{animation:pop-in .24s cubic-bezier(.2,.9,.3,1) both}
+.wiz-body .input{font-size:16px}
+.wiz-pick{display:flex; flex-direction:column; gap:9px}
+.wiz-pick .row-item{min-height:60px; padding:11px 13px}
+.wiz-pick .row-item[aria-pressed="true"]{
+  border-color:color-mix(in srgb,var(--accent) 62%,transparent);
+  background:color-mix(in srgb,var(--accent) 11%,var(--surface));
+}
+.wiz-pick .row-ico{width:40px; height:40px; font-size:19px; border-radius:13px}
+.tick{color:color-mix(in srgb,var(--accent) 85%,var(--text)); font-size:16px; font-weight:800}
 </style>
 </head>
 <body>
@@ -538,7 +615,7 @@ function prefersDark(){
 
 /* ============ state ============ */
 var state = load();
-var ui = {view:"cats", openCat:null, openSub:null, tab:"q1",
+var ui = {view:"cats", openCat:null, openSub:null, tab:null, showFilters:false,
           search:"", fCat:"all", fSub:"all", fStat:"all", setMode:null};
 
 function load(){
@@ -713,21 +790,19 @@ function emptyHTML(icon, title, text, btn){
            '>＋ '+esc(btn.label)+'</button>' : '')+'</div>';
 }
 
-function statsHTML(){
+function miniStatsHTML(){
   var all = state.tasks, c = countsOf(all), today = todayISO();
   var late = all.filter(function(t){ return t.status!=="done" && t.due && t.due < today; }).length;
   var tiles = [
-    {val:"all",     n:c.all,   label:"Total",             color:"var(--brand)",      num:""},
-    {val:"doing",   n:c.doing, label:stat("doing").label, color:STATUS_COLORS.doing, num:STATUS_COLORS.doing},
-    {val:"done",    n:c.done,  label:stat("done").label,  color:STATUS_COLORS.done,  num:STATUS_COLORS.done},
-    {val:"overdue", n:late,    label:"Overdue",           color:"#ef4444",           num:late?"#ef4444":""}
+    {val:"all",     n:c.all,   icon:"📋", label:"All",               color:"var(--brand)"},
+    {val:"doing",   n:c.doing, icon:stat("doing").icon, label:stat("doing").label, color:STATUS_COLORS.doing},
+    {val:"done",    n:c.done,  icon:stat("done").icon,  label:stat("done").label,  color:STATUS_COLORS.done},
+    {val:"overdue", n:late,    icon:"⏰", label:"Overdue",           color:"#ef4444"}
   ];
-  return '<div class="stats">'+ tiles.map(function(x){
-    var on = ui.view === "all" && ui.fStat === x.val;
-    return '<button class="stat" data-act="stat" data-val="'+x.val+'" style="--sc:'+x.color+'" '+
-      'aria-pressed="'+on+'" title="Show these tasks in a list">'+
-      '<span class="peek">'+(on?"●":"→")+'</span>'+
-      '<b'+(x.num?' style="color:'+x.num+'"':'')+'>'+x.n+'</b><span>'+esc(x.label)+'</span></button>';
+  return '<div class="mini-stats">'+ tiles.map(function(x){
+    return '<button class="mstat" data-act="stat" data-val="'+x.val+'" style="--sc:'+x.color+'" '+
+      'aria-pressed="'+(ui.view === "all" && ui.fStat === x.val)+'">'+
+      x.icon+' <b>'+x.n+'</b> '+esc(x.label)+'</button>';
   }).join("") + '</div>';
 }
 
@@ -744,120 +819,99 @@ function crumbHTML(parts){
   }).join('<span class="crumb-sep">/</span>') + '</div>';
 }
 
-/* ============ dashboard: main categories ============ */
-function renderDashboard(){
-  var cards = state.categories.map(function(c){
-    var counts = countsOf(tasksIn({cat:c.id}));
-    var chips = c.subs.map(function(s){
-      var open = tasksIn({cat:c.id, sub:s.id}).filter(function(t){return t.status!=="done";}).length;
-      return '<span class="qchip" style="--qc:'+c.color+'">'+s.icon+" "+esc(s.name)+
-             (open?' <b>'+open+'</b>':'')+'</span>';
-    }).join("");
-    return '<div class="card-wrap">'+
-      '<button class="cat-card" data-act="open-cat" data-cat="'+c.id+'" style="--accent:'+c.color+'">'+
-        '<div class="cat-top"><span class="cat-emoji">'+c.icon+'</span>'+
-          '<span><span class="cat-name">'+esc(c.name)+'</span>'+
-          '<span class="cat-sub">'+c.subs.length+' group'+(c.subs.length===1?"":"s")+' · '+
-            counts.all+' task'+(counts.all===1?"":"s")+
-            (counts.done ? ' · '+counts.done+' '+esc(stat("done").label.toLowerCase()) : '')+
-            '</span></span></div>'+
-        '<div class="bar">'+barHTML(counts)+'</div>'+
-        '<div class="quad-mini">'+chips+'</div>'+
-        '<div class="cat-foot"><span>Open groups &amp; priority tabs</span><span class="go">→</span></div>'+
-      '</button>'+
-      '<button class="card-edit" data-act="edit-cat" data-cat="'+c.id+'" title="Edit this area" '+
-        'aria-label="Edit '+esc(c.name)+'">✏️</button>'+
-    '</div>';
+/* ============ step 1: which area? ============ */
+function renderAreas(){
+  var rows = state.categories.map(function(c){
+    var list = tasksIn({cat:c.id});
+    var open = list.filter(function(t){ return t.status!=="done"; }).length;
+    return '<button class="row-item" data-act="open-cat" data-cat="'+c.id+'" style="--accent:'+c.color+'">'+
+      '<span class="row-ico">'+c.icon+'</span>'+
+      '<span class="row-txt"><span class="row-name">'+esc(c.name)+'</span>'+
+        '<span class="row-meta">'+c.subs.length+' group'+(c.subs.length===1?"":"s")+' · '+
+          list.length+' task'+(list.length===1?"":"s")+'</span></span>'+
+      (open ? '<span class="row-pill">'+open+' open</span>' : '')+
+      '<span class="chev">›</span></button>';
   }).join("");
 
-  return '<section class="hero"><div>'+
-      '<h2>'+greeting()+' <span class="wave">👋</span></h2>'+
-      '<p>Pick a life area, then a group inside it, then sort what you do into the four priority tabs. '+
-      'Tap a status pill any time to move a task along.</p>'+
-    '</div>'+ statsHTML() +'</section>'+
-    '<div class="grid-cats">'+cards+
-      '<button class="add-card" data-act="add-cat">'+
-        '<span class="plus">＋</span><span><b>Add an area</b><small>It starts with 4 groups you can rename</small></span>'+
-      '</button>'+
-    '</div>';
+  return '<h2 class="question">Which area?</h2>'+
+    '<p class="q-sub">'+greeting()+' 👋 Tap a part of your life to look inside it.</p>'+
+    '<div class="rows">'+rows+
+      '<button class="row-item dashed" data-act="add-cat">'+
+        '<span class="row-ico">＋</span><span class="row-txt"><span class="row-name">Add an area</span>'+
+        '<span class="row-meta">Starts with 4 groups</span></span></button>'+
+    '</div>'+
+    '<button class="quiet-link" data-act="open-settings">✏️ Rename areas, groups &amp; labels</button>';
 }
 
-/* ============ one category: its groups ============ */
-function renderCategory(){
+/* ============ step 2: which group? ============ */
+function renderGroups(){
   var c = cat(ui.openCat);
-  var total = countsOf(tasksIn({cat:c.id}));
-  var cards = c.subs.map(function(s){
-    var counts = countsOf(tasksIn({cat:c.id, sub:s.id}));
-    var chips = QUADS.map(function(q){
-      var n = tasksIn({cat:c.id, sub:s.id, quad:q.id}).filter(function(t){return t.status!=="done";}).length;
-      return '<span class="qchip" style="--qc:'+q.color+'">'+q.icon+" "+n+'</span>';
-    }).join("");
-    return '<div class="card-wrap">'+
-      '<button class="cat-card sub-card" data-act="open-sub" data-cat="'+c.id+'" data-sub="'+s.id+'" '+
-        'style="--accent:'+c.color+'">'+
-        '<div class="cat-top"><span class="cat-emoji">'+s.icon+'</span>'+
-          '<span><span class="cat-name">'+esc(s.name)+'</span>'+
-          '<span class="cat-sub">'+counts.all+' task'+(counts.all===1?"":"s")+' · '+
-            counts.done+' '+esc(stat("done").label.toLowerCase())+'</span></span></div>'+
-        '<div class="bar">'+barHTML(counts)+'</div>'+
-        '<div class="quad-mini">'+chips+'</div>'+
-        '<div class="cat-foot"><span>Open the 4 priority tabs</span><span class="go">→</span></div>'+
-      '</button>'+
-      '<button class="card-edit" data-act="edit-cat" data-cat="'+c.id+'" title="Edit groups" '+
-        'aria-label="Edit groups">✏️</button>'+
-    '</div>';
+  var rows = c.subs.map(function(sg){
+    var list = tasksIn({cat:c.id, sub:sg.id});
+    var open = list.filter(function(t){ return t.status!=="done"; }).length;
+    return '<button class="row-item" data-act="open-sub" data-cat="'+c.id+'" data-sub="'+sg.id+'" '+
+      'style="--accent:'+c.color+'">'+
+      '<span class="row-ico">'+sg.icon+'</span>'+
+      '<span class="row-txt"><span class="row-name">'+esc(sg.name)+'</span>'+
+        '<span class="row-meta">'+list.length+' task'+(list.length===1?"":"s")+'</span></span>'+
+      (open ? '<span class="row-pill">'+open+' open</span>' : '')+
+      '<span class="chev">›</span></button>';
   }).join("");
 
   return crumbHTML([{label:"All areas", act:"home"},{label:c.name}])+
-    '<section class="cat-head" style="--accent:'+c.color+'">'+
-      '<span class="cat-emoji">'+c.icon+'</span>'+
-      '<div><h2>'+esc(c.name)+'</h2><div class="cat-sub">'+c.subs.length+' group'+
-        (c.subs.length===1?"":"s")+' · '+total.all+' task'+(total.all===1?"":"s")+' · '+
-        total.done+' '+esc(stat("done").label.toLowerCase())+'</div></div>'+
-      '<div class="spacer"></div>'+
-      '<button class="btn sm ghost" data-act="edit-cat" data-cat="'+c.id+'">✏️ Edit area</button>'+
-      '<button class="btn sm primary" data-act="add" data-cat="'+c.id+'">＋ Add task</button>'+
-    '</section>'+
-    '<div class="group-title"><span>Groups inside '+esc(c.name)+'</span><span class="line"></span>'+
-      '<span>'+c.subs.length+'</span></div>'+
-    '<div class="grid-cats">'+cards+
-      '<button class="add-card" data-act="add-sub" data-cat="'+c.id+'">'+
-        '<span class="plus">＋</span><span><b>Add a group</b><small>Another slice of '+esc(c.name)+'</small></span>'+
-      '</button>'+
+    '<h2 class="question">Which group in '+esc(c.name)+'?</h2>'+
+    '<p class="q-sub">'+c.icon+' Pick the slice of '+esc(c.name)+' you want to work on.</p>'+
+    '<div class="rows">'+rows+
+      '<button class="row-item dashed" data-act="add-sub" data-cat="'+c.id+'">'+
+        '<span class="row-ico">＋</span><span class="row-txt"><span class="row-name">Add a group</span>'+
+        '<span class="row-meta">Another slice of '+esc(c.name)+'</span></span></button>'+
+    '</div>'+
+    '<button class="quiet-link" data-act="edit-cat" data-cat="'+c.id+'">✏️ Rename this area &amp; its groups</button>';
+}
+
+/* ============ step 3: which priority? ============ */
+function renderPriorities(){
+  var c = cat(ui.openCat), sg = sub(ui.openCat, ui.openSub);
+  var rows = QUADS.map(function(q){
+    var list = tasksIn({cat:c.id, sub:sg.id, quad:q.id});
+    var open = list.filter(function(t){ return t.status!=="done"; }).length;
+    return '<button class="row-item" data-act="tab" data-quad="'+q.id+'" style="--accent:'+q.color+'">'+
+      '<span class="row-ico">'+q.icon+'</span>'+
+      '<span class="row-txt"><span class="row-name">'+esc(q.name)+'</span>'+
+        '<span class="row-meta">'+esc(q.hint)+' · '+list.length+' task'+(list.length===1?"":"s")+'</span></span>'+
+      (open ? '<span class="row-pill">'+open+' open</span>' : '')+
+      '<span class="chev">›</span></button>';
+  }).join("");
+
+  return crumbHTML([{label:"All areas", act:"home"},{label:c.name, act:"open-cat", cat:c.id},{label:sg.name}])+
+    '<h2 class="question">How urgent and important?</h2>'+
+    '<p class="q-sub">'+sg.icon+' '+esc(sg.name)+' — pick a box to see the tasks in it.</p>'+
+    '<div class="rows">'+rows+
+      '<button class="row-item dashed" data-act="add" data-cat="'+c.id+'" data-sub="'+sg.id+'">'+
+        '<span class="row-ico">＋</span><span class="row-txt"><span class="row-name">Add a task to '+esc(sg.name)+'</span>'+
+        '<span class="row-meta">Two quick questions</span></span></button>'+
     '</div>';
 }
 
-/* ============ one group: the 4 priority tabs ============ */
-function renderSub(){
-  var c = cat(ui.openCat), s = sub(ui.openCat, ui.openSub);
-  var tabs = QUADS.map(function(q){
-    var list = tasksIn({cat:c.id, sub:s.id, quad:q.id});
-    var open = list.filter(function(t){return t.status!=="done";}).length;
-    return '<button class="tab" role="tab" data-act="tab" data-quad="'+q.id+'" '+
-      'aria-selected="'+(ui.tab===q.id)+'" style="--qc:'+q.color+'">'+
-      '<span class="t-row"><span class="t-ico">'+q.icon+'</span><span class="t-name">'+esc(q.name)+'</span></span>'+
-      '<span class="t-meta"><span>'+esc(q.hint)+'</span><span class="count">'+open+' open</span></span></button>';
-  }).join("");
-  var q = quad(ui.tab);
-  var items = tasksIn({cat:c.id, sub:s.id, quad:q.id});
-  var counts = countsOf(tasksIn({cat:c.id, sub:s.id}));
+/* ============ step 4: the tasks themselves ============ */
+function renderTaskScreen(){
+  var c = cat(ui.openCat), sg = sub(ui.openCat, ui.openSub), q = quad(ui.tab);
+  var items = tasksIn({cat:c.id, sub:sg.id, quad:q.id});
 
-  return crumbHTML([{label:"All areas", act:"home"},{label:c.name, act:"open-cat", cat:c.id},{label:s.name}])+
-    '<section class="cat-head" style="--accent:'+c.color+'">'+
-      '<span class="cat-emoji">'+s.icon+'</span>'+
-      '<div><h2>'+esc(s.name)+'</h2><div class="cat-sub">'+c.icon+' '+esc(c.name)+' · '+
-        counts.all+' task'+(counts.all===1?"":"s")+' · '+counts.done+' '+
-        esc(stat("done").label.toLowerCase())+'</div></div>'+
+  return crumbHTML([{label:"All areas", act:"home"},{label:c.name, act:"open-cat", cat:c.id},
+                    {label:sg.name, act:"open-sub", cat:c.id, sub:sg.id},{label:q.hint}])+
+    '<section class="cat-head" style="--accent:'+q.color+'">'+
+      '<span class="cat-emoji">'+q.icon+'</span>'+
+      '<div><h2>'+esc(q.name)+'</h2><div class="cat-sub">'+c.icon+' '+esc(c.name)+' › '+sg.icon+' '+esc(sg.name)+
+        ' · '+items.length+' task'+(items.length===1?"":"s")+'</div></div>'+
       '<div class="spacer"></div>'+
-      '<button class="btn sm ghost" data-act="edit-cat" data-cat="'+c.id+'">✏️ Rename</button>'+
-      '<button class="btn sm primary" data-act="add" data-cat="'+c.id+'" data-sub="'+s.id+'" data-quad="'+q.id+'">＋ Add here</button>'+
+      '<button class="btn sm primary" data-act="add" data-cat="'+c.id+'" data-sub="'+sg.id+'" data-quad="'+q.id+'">＋ Add here</button>'+
     '</section>'+
-    '<div class="tabs" role="tablist" aria-label="Priority quadrants">'+tabs+'</div>'+
-    '<div class="group-title"><span>'+q.icon+' '+esc(q.name)+'</span><span class="line"></span>'+
+    '<div class="group-title"><span>'+esc(stat("todo").label)+' first</span><span class="line"></span>'+
       '<span>'+items.length+'</span></div>'+
     listHTML(items, {tags:false}, emptyHTML(q.icon, "Nothing here yet",
-      'No "'+q.name+'" tasks in '+s.name+' — that is a good thing, or a good place to start.',
-      {label:"Add a task here", cat:c.id, sub:s.id, quad:q.id}));
+      'No "'+q.name+'" tasks in '+sg.name+' — that is a good thing, or a good place to start.',
+      {label:"Add a task here", cat:c.id, sub:sg.id, quad:q.id}));
 }
 
 /* ============ all activities ============ */
@@ -904,17 +958,20 @@ function renderAll(){
     '<button class="chip" data-act="fstat" data-val="overdue" style="--c:#ef4444" aria-pressed="'+
       (ui.fStat==="overdue")+'">⏰ Overdue</button>';
 
-  return '<section class="hero"><div><h2>All activities 📋</h2>'+
-      '<p>Every task from every area, group and priority tab, in one master list. '+
-      'Tags show exactly where each one lives.</p></div>'+ statsHTML() +'</section>'+
-    '<div class="toolbar">'+
+  var openFilters = ui.showFilters || ui.fCat !== "all" || (ui.fStat !== "all" && ui.fStat !== "overdue");
+  return '<h2 class="question">All activities 📋</h2>'+
+    '<p class="q-sub">Everything you have, in one list — tags show where each task lives.</p>'+
+    miniStatsHTML()+
+    '<div class="toolbar" style="margin-top:0">'+
       '<label class="search">🔎<input id="searchInput" type="search" placeholder="Search tasks and notes…" value="'+
         esc(ui.search)+'" aria-label="Search tasks"></label>'+
+      '<button class="btn" data-act="toggle-filters" aria-pressed="'+openFilters+'">🎛️ Filters</button>'+
       '<button class="btn primary" data-act="add">＋ New task</button>'+
     '</div>'+
-    '<div class="toolbar" style="margin-top:0"><div class="chips">'+catChips+'</div></div>'+
-    subChips+
-    '<div class="toolbar" style="margin-top:-4px"><div class="chips">'+statChips+'</div></div>'+
+    (openFilters ?
+      '<div class="toolbar" style="margin-top:0"><div class="chips">'+catChips+'</div></div>'+
+      subChips+
+      '<div class="toolbar" style="margin-top:-4px"><div class="chips">'+statChips+'</div></div>' : '')+
     '<div class="group-title"><span>'+esc(filterSummary(items.length))+'</span><span class="line"></span>'+
       (ui.fStat!=="all" || ui.fCat!=="all" || ui.search.trim() ?
         '<button class="btn sm ghost" data-act="clear-filters">✕ Clear filters</button>' : '')+'</div>'+
@@ -941,106 +998,165 @@ function paint(){
   $("#themeBtn").textContent = state.theme === "dark" ? "☀️" : "🌙";
   var m = $("#main");
   if(ui.view === "all") m.innerHTML = renderAll();
-  else if(ui.openCat && ui.openSub) m.innerHTML = renderSub();
-  else if(ui.openCat) m.innerHTML = renderCategory();
-  else m.innerHTML = renderDashboard();
+  else if(ui.openCat && ui.openSub && ui.tab) m.innerHTML = renderTaskScreen();
+  else if(ui.openCat && ui.openSub) m.innerHTML = renderPriorities();
+  else if(ui.openCat) m.innerHTML = renderGroups();
+  else m.innerHTML = renderAreas();
   Array.prototype.forEach.call(document.querySelectorAll("#viewSwitch button"), function(b){
     b.setAttribute("aria-selected", String(b.dataset.view === ui.view));
   });
 }
 
-/* ============ task modal ============ */
-var draft = null;
+/* ============ new task: one question at a time ============ */
+var draft = null, wiz = null;
 
 function openTask(id, prefill){
+  prefill = prefill || {};
   var t = id ? byId(id) : null;
-  var c;
-  if(t) c = cat(t.category);
-  else c = cat((prefill && prefill.cat) || ui.openCat || state.categories[0].id);
-  var sid;
-  if(t) sid = t.sub;
-  else if(prefill && prefill.sub) sid = sub(c.id, prefill.sub).id;
-  else if(ui.openCat === c.id && ui.openSub) sid = ui.openSub;
-  else sid = c.subs[0].id;
+  var c = t ? cat(t.category) : cat(prefill.cat || ui.openCat || state.categories[0].id);
+  var sid = t ? t.sub : (prefill.sub ? sub(c.id, prefill.sub).id
+                       : (ui.openCat === c.id && ui.openSub ? ui.openSub : c.subs[0].id));
+  draft = {
+    id: t ? t.id : null,
+    title: t ? t.title : "",
+    category: c.id,
+    sub: sid,
+    quadrant: t ? t.quadrant : (prefill.quad || ui.tab || "q1"),
+    status: t ? t.status : "todo",
+    due: t ? t.due : "",
+    notes: t ? t.notes : ""
+  };
+  var steps = ["title"];
+  if(t){
+    steps = ["title","category","sub","quadrant","more"];
+  }else{
+    if(!prefill.cat)  steps.push("category");
+    if(!prefill.sub)  steps.push("sub");
+    if(!prefill.quad) steps.push("quadrant");
+    steps.push("more");
+  }
+  wiz = {steps:steps, i:0, editing:!!t};
+  renderWiz();
+}
 
-  draft = {id: t ? t.id : null, category:c.id, sub:sid,
-           quadrant: t ? t.quadrant : ((prefill && prefill.quad) || (ui.openSub ? ui.tab : "q1")),
-           status: t ? t.status : "todo"};
+function pickRow(k, val, icon, name, meta, color, advance){
+  return '<button type="button" class="row-item" data-act="wiz-pick" data-k="'+k+'" data-val="'+val+'" '+
+    (advance ? 'data-advance="1" ' : '')+'style="--accent:'+color+'" aria-pressed="'+(draft[k] === val)+'">'+
+    '<span class="row-ico">'+icon+'</span>'+
+    '<span class="row-txt"><span class="row-name">'+esc(name)+'</span>'+
+      (meta ? '<span class="row-meta">'+esc(meta)+'</span>' : '')+'</span>'+
+    (draft[k] === val ? '<span class="tick">✓</span>' : '')+'</button>';
+}
+
+function wizStep(){
+  var step = wiz.steps[wiz.i], c = cat(draft.category);
+  if(step === "title") return {
+    q:"What do you need to do?",
+    hint:"A few plain words are plenty.",
+    body:'<input class="input" id="f_title" placeholder="e.g. Pay the electricity bill" '+
+         'value="'+esc(draft.title)+'" autocomplete="off">'
+  };
+  if(step === "category") return {
+    q:"Which area of life?",
+    hint:"Tap one to keep going.",
+    body:'<div class="wiz-pick">'+ state.categories.map(function(x){
+      return pickRow("category", x.id, x.icon, x.name, x.subs.length+" groups", x.color, true);
+    }).join("") +'</div>'
+  };
+  if(step === "sub") return {
+    q:"Which group in "+c.name+"?",
+    hint:c.icon+" Pick the slice it belongs to.",
+    body:'<div class="wiz-pick">'+ c.subs.map(function(sg){
+      return pickRow("sub", sg.id, sg.icon, sg.name, "", c.color, true);
+    }).join("") +'</div>'
+  };
+  if(step === "quadrant") return {
+    q:"How urgent and important is it?",
+    hint:"This decides which box it lands in.",
+    body:'<div class="wiz-pick">'+ QUADS.map(function(q){
+      return pickRow("quadrant", q.id, q.icon, q.name, q.hint, q.color, true);
+    }).join("") +'</div>'
+  };
+  return {
+    q:"Anything else?",
+    hint:"All optional — tap "+(wiz.editing ? "Save changes" : "Add task")+" whenever you are ready.",
+    body:'<div class="wiz-pick">'+ STATUS_IDS.map(function(sid){
+        return pickRow("status", sid, stat(sid).icon, stat(sid).label, "", STATUS_COLORS[sid], false);
+      }).join("") +'</div>'+
+      '<div class="row2" style="margin-top:13px">'+
+        '<div class="field"><label for="f_due">Due date</label>'+
+          '<input class="input" id="f_due" type="date" value="'+esc(draft.due)+'"></div>'+
+        '<div class="field"><label for="f_notes">Notes</label>'+
+          '<textarea class="input" id="f_notes" placeholder="Anything worth remembering…">'+esc(draft.notes)+'</textarea></div>'+
+      '</div>'
+  };
+}
+
+function renderWiz(){
+  var st = wizStep(), last = wiz.i === wiz.steps.length - 1;
+  var dots = wiz.steps.map(function(_,i){ return '<i class="'+(i===wiz.i?"on":"")+'"></i>'; }).join("");
   var el = $("#taskModal");
-  el.innerHTML = taskSheetHTML(t);
+  el.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="'+(wiz.editing?"Edit task":"New task")+'">'+
+      '<div class="wiz-top">'+
+        (wiz.i ? '<button class="icon-btn" data-act="wiz-back" aria-label="Back">←</button>' : '')+
+        '<span class="wiz-name">'+(wiz.editing ? "✏️ Edit task" : "✨ New task")+'</span>'+
+        '<span class="wiz-dots" aria-label="Step '+(wiz.i+1)+' of '+wiz.steps.length+'">'+dots+'</span>'+
+        '<button class="icon-btn" data-act="close" aria-label="Close">✕</button>'+
+      '</div>'+
+      '<div class="wiz-body">'+
+        '<div class="wiz-q">'+esc(st.q)+'</div>'+
+        '<p class="wiz-hint">'+esc(st.hint)+'</p>'+
+        st.body+
+      '</div>'+
+      '<div class="sheet-foot">'+
+        (wiz.editing && last ? '<button class="btn danger grow" data-act="del" data-id="'+draft.id+'">🗑️ Delete</button>' : '')+
+        (wiz.i ? '<button class="btn ghost" data-act="wiz-back">← Back</button>' : '')+
+        '<button class="btn primary" data-act="wiz-next">'+
+          (last ? (wiz.editing ? "Save changes" : "Add task ✓") : "Next →")+'</button>'+
+      '</div></div>';
   el.hidden = false;
-  syncPickers();
-  setTimeout(function(){ var i = $("#f_title"); if(i){ i.focus(); i.select(); } }, 40);
+  if(wiz.steps[wiz.i] === "title"){
+    setTimeout(function(){ var i = $("#f_title"); if(i){ i.focus(); i.select(); } }, 40);
+  }
 }
 
-function subPickerHTML(){
-  var c = cat(draft.category);
-  return c.subs.map(function(s){
-    return '<button type="button" class="opt" data-pick="sub" data-val="'+s.id+'" style="--oc:'+c.color+'">'+
-      '<span class="o-ico">'+s.icon+'</span><span>'+esc(s.name)+'</span></button>';
-  }).join("");
+function captureWiz(){
+  if(!wiz) return;
+  var t = $("#f_title"); if(t) draft.title = t.value;
+  var d = $("#f_due");   if(d) draft.due = d.value;
+  var n = $("#f_notes"); if(n) draft.notes = n.value;
 }
 
-function taskSheetHTML(t){
-  var catOpts = state.categories.map(function(c){
-    return '<button type="button" class="opt" data-pick="category" data-val="'+c.id+'" style="--oc:'+c.color+'">'+
-      '<span class="o-ico">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>';
-  }).join("");
-  var quadOpts = QUADS.map(function(q){
-    return '<button type="button" class="opt" data-pick="quadrant" data-val="'+q.id+'" style="--oc:'+q.color+'">'+
-      '<span class="o-ico">'+q.icon+'</span><span>'+esc(q.name)+'<small>'+esc(q.hint)+'</small></span></button>';
-  }).join("");
-  var statOpts = STATUS_IDS.map(function(sid){
-    return '<button type="button" class="opt" data-pick="status" data-val="'+sid+'" style="--oc:'+STATUS_COLORS[sid]+'">'+
-      '<span class="o-ico">'+stat(sid).icon+'</span><span>'+esc(stat(sid).label)+'</span></button>';
-  }).join("");
-
-  return '<div class="sheet" role="dialog" aria-modal="true" aria-label="'+(t?"Edit task":"New task")+'">'+
-    '<div class="sheet-head"><h3>'+(t?"✏️ Edit task":"✨ New task")+'</h3>'+
-      '<button class="icon-btn x" data-act="close" aria-label="Close">✕</button></div>'+
-    '<div class="field"><label for="f_title">What do you need to do?</label>'+
-      '<input class="input" id="f_title" placeholder="e.g. Pay the electricity bill" value="'+esc(t?t.title:"")+'"></div>'+
-    '<div class="field"><label>1 · Which area of life?</label><div class="picker cats">'+catOpts+'</div></div>'+
-    '<div class="field"><label>2 · Which group inside it?</label>'+
-      '<div class="picker cats" id="subPicker">'+subPickerHTML()+'</div></div>'+
-    '<div class="field"><label>3 · How urgent &amp; important is it?</label><div class="picker">'+quadOpts+'</div></div>'+
-    '<div class="field"><label>Status</label><div class="picker cats">'+statOpts+'</div></div>'+
-    '<div class="row2">'+
-      '<div class="field"><label for="f_due">Due date (optional)</label>'+
-        '<input class="input" id="f_due" type="date" value="'+esc(t?t.due:"")+'"></div>'+
-      '<div class="field"><label for="f_notes">Notes (optional)</label>'+
-        '<textarea class="input" id="f_notes" placeholder="Anything worth remembering…">'+esc(t?t.notes:"")+'</textarea></div>'+
-    '</div>'+
-    '<div class="sheet-foot">'+
-      (t ? '<button class="btn danger grow" data-act="del" data-id="'+t.id+'">🗑️ Delete</button>' : '')+
-      '<button class="btn ghost" data-act="close">Cancel</button>'+
-      '<button class="btn primary" data-act="save">'+(t?"Save changes":"Add task")+'</button>'+
-    '</div></div>';
-}
-
-function syncPickers(){
-  Array.prototype.forEach.call(document.querySelectorAll("#taskModal .opt"), function(b){
-    b.setAttribute("aria-pressed", String(draft[b.dataset.pick] === b.dataset.val));
-  });
+function wizGo(delta){
+  captureWiz();
+  if(delta > 0 && wiz.steps[wiz.i] === "title" && !draft.title.trim()){
+    toast("Give the task a name first ✏️");
+    var i = $("#f_title"); if(i) i.focus();
+    return;
+  }
+  var n = wiz.i + delta;
+  if(n < 0) return;
+  if(n >= wiz.steps.length){ saveTask(); return; }
+  wiz.i = n; renderWiz();
 }
 
 function saveTask(){
-  var title = $("#f_title").value.trim();
-  if(!title){ $("#f_title").focus(); toast("Give the task a name first ✏️"); return; }
-  var due = $("#f_due").value, notes = $("#f_notes").value.trim();
+  captureWiz();
+  var title = (draft.title || "").trim();
+  if(!title){ toast("Give the task a name first ✏️"); return; }
   var existing = draft.id ? byId(draft.id) : null;
   var wasDone = existing && existing.status === "done";
   var newId = null;
   if(existing){
-    existing.title = title; existing.notes = notes; existing.due = due;
+    existing.title = title; existing.notes = draft.notes.trim(); existing.due = draft.due;
     existing.category = draft.category; existing.sub = draft.sub;
     existing.quadrant = draft.quadrant; existing.status = draft.status;
     if(draft.status === "done" && !wasDone) existing.done_at = Date.now();
   }else{
     newId = uid("t");
-    state.tasks.unshift({id:newId, title:title, notes:notes, due:due, category:draft.category, sub:draft.sub,
-      quadrant:draft.quadrant, status:draft.status, created:Date.now(),
-      done_at: draft.status === "done" ? Date.now() : 0});
+    state.tasks.unshift({id:newId, title:title, notes:draft.notes.trim(), due:draft.due,
+      category:draft.category, sub:draft.sub, quadrant:draft.quadrant, status:draft.status,
+      created:Date.now(), done_at: draft.status === "done" ? Date.now() : 0});
   }
   save(); closeModals(); render();
   if(draft.status === "done" && !wasDone){
@@ -1265,39 +1381,39 @@ function deleteSub(catId, subId){
   save(); renderSetModal(true); render(); toast("Group removed 🗑️");
 }
 
+function jumpTop(){ try{ window.scrollTo({top:0, behavior:"smooth"}); }catch(e){ try{ window.scrollTo(0,0); }catch(e2){} } }
+
 /* ============ events ============ */
 document.addEventListener("click", function(ev){
   var b = ev.target.closest("[data-act], [data-view], [data-pick]");
   if(!b) return;
 
   if(b.dataset.view){
-    ui.view = b.dataset.view; ui.openCat = null; ui.openSub = null;
-    render();
-    try{ window.scrollTo(0,0); }catch(e){}
+    ui.view = b.dataset.view; ui.openCat = null; ui.openSub = null; ui.tab = null;
+    render(); jumpTop();
     return;
   }
 
-  if(b.dataset.pick){
-    var k = b.dataset.pick;
-    draft[k] = b.dataset.val;
-    if(k === "category"){
-      draft.sub = cat(draft.category).subs[0].id;
-      var box = $("#subPicker");
-      if(box) box.innerHTML = subPickerHTML();
-    }
-    syncPickers();
-    return;
-  }
 
   switch(b.dataset.act){
     case "open-cat":
-      ui.view = "cats"; ui.openCat = b.dataset.cat; ui.openSub = null;
-      render(); window.scrollTo({top:0, behavior:"smooth"}); break;
+      ui.view = "cats"; ui.openCat = b.dataset.cat; ui.openSub = null; ui.tab = null;
+      render(); jumpTop(); break;
     case "open-sub":
-      ui.view = "cats"; ui.openCat = b.dataset.cat; ui.openSub = b.dataset.sub; ui.tab = "q1";
-      render(); window.scrollTo({top:0, behavior:"smooth"}); break;
-    case "home": ui.openCat = null; ui.openSub = null; render(); break;
-    case "tab": ui.tab = b.dataset.quad; render(); break;
+      ui.view = "cats"; ui.openCat = b.dataset.cat; ui.openSub = b.dataset.sub; ui.tab = null;
+      render(); jumpTop(); break;
+    case "home": ui.openCat = null; ui.openSub = null; ui.tab = null; render(); jumpTop(); break;
+    case "tab": ui.tab = b.dataset.quad; render(); jumpTop(); break;
+    case "wiz-next": wizGo(1); break;
+    case "wiz-back": wizGo(-1); break;
+    case "wiz-pick":
+      captureWiz();
+      draft[b.dataset.k] = b.dataset.val;
+      if(b.dataset.k === "category") draft.sub = cat(draft.category).subs[0].id;
+      if(b.dataset.advance) wizGo(1); else renderWiz();
+      break;
+    case "toggle-filters": ui.showFilters = !ui.showFilters; render(); break;
+    case "open-settings": openSettings(); break;
     case "status": setStatus(b.dataset.id, b.dataset.status); break;
     case "add": openTask(null, {cat:b.dataset.cat, sub:b.dataset.sub, quad:b.dataset.quad}); break;
     case "edit": openTask(b.dataset.id); break;
@@ -1324,14 +1440,15 @@ document.addEventListener("click", function(ev){
       if(confirm("Reset all tasks, areas, groups and names back to the starting example? This cannot be undone.")){
         try{ localStorage.removeItem(KEY); localStorage.removeItem(OLD_KEY); }catch(e){}
         state = defaults(); state.tasks = seedTasks(); state.seeded = true;
-        ui.openCat = null; ui.openSub = null; ui.fCat = "all"; ui.fSub = "all"; ui.fStat = "all"; ui.search = "";
+        ui.openCat = null; ui.openSub = null; ui.tab = null;
+        ui.fCat = "all"; ui.fSub = "all"; ui.fStat = "all"; ui.search = "";
         save(); closeModals(); render(); toast("Fresh start ✨");
       }
       break;
     case "stat":
-      ui.view = "all"; ui.openCat = null; ui.openSub = null;
+      ui.view = "all"; ui.openCat = null; ui.openSub = null; ui.tab = null;
       ui.fStat = b.dataset.val; ui.fCat = "all"; ui.fSub = "all"; ui.search = "";
-      render(); window.scrollTo({top:0, behavior:"smooth"}); break;
+      render(); jumpTop(); break;
     case "clear-filters":
       ui.fStat = "all"; ui.fCat = "all"; ui.fSub = "all"; ui.search = ""; render(); break;
     case "fcat": ui.fCat = b.dataset.val; ui.fSub = "all"; render(); break;
@@ -1374,7 +1491,11 @@ document.addEventListener("keydown", function(ev){
   if(ev.key === "Escape"){ closeModals(); return; }
   var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if(!typing && (ev.key === "n" || ev.key === "N") && $("#taskModal").hidden){ ev.preventDefault(); openTask(null,{}); }
-  if(ev.key === "Enter" && (ev.metaKey || ev.ctrlKey) && !$("#taskModal").hidden) saveTask();
+  if(ev.key === "Enter" && !$("#taskModal").hidden && wiz){
+    if(document.activeElement.id === "f_notes" && !(ev.metaKey || ev.ctrlKey)) return;
+    ev.preventDefault();
+    if(ev.metaKey || ev.ctrlKey) saveTask(); else wizGo(1);
+  }
 });
 
 $("#addBtn").addEventListener("click", function(){ openTask(null,{}); });
